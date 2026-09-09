@@ -1,7 +1,8 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-build="1.4.6">
 <head>
 <meta charset="utf-8">
+<!-- Heft build 1.4.6 -->
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Heft</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23161d4a'/%3E%3Cpath d='M8 7H13.5V13.25H18.5V7H24V25H18.5V17.75H13.5V25H8Z' fill='%23dfe6ff'/%3E%3C/svg%3E">
@@ -15,10 +16,10 @@
   html,body{margin:0;overscroll-behavior:none;touch-action:manipulation}
   body{background:radial-gradient(120% 70% at 50% 0%,var(--b1) 0%,var(--b2) 46%,var(--b3) 100%);
        color:var(--ink);font-family:Karla,system-ui,sans-serif;display:flex;flex-direction:column;
-       align-items:center;min-height:100svh;padding:calc(18px + env(safe-area-inset-top)) 12px calc(16px + env(safe-area-inset-bottom))}
-  header{width:100%;max-width:430px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;position:sticky;top:0;z-index:5;background:var(--b1)}
-  #mark{width:132px;height:auto;flex:none;overflow:visible}
-  .meta{font-size:11.5px;color:var(--dim);font-variant-numeric:tabular-nums;text-align:right;line-height:1.45}
+       align-items:center;min-height:100svh;padding:0 12px calc(16px + env(safe-area-inset-bottom))}
+  header{width:100%;max-width:430px;display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:calc(6px + env(safe-area-inset-top)) 0 5px;border-bottom:1px solid rgba(77,89,166,.5);position:sticky;top:0;z-index:5;background:var(--b1)}
+  #mark{position:absolute;left:0;top:0;display:block;overflow:visible;pointer-events:none}
+  .meta{font-size:11.5px;color:var(--dim);font-variant-numeric:tabular-nums;text-align:right;line-height:1.2;padding-right:6px}
   .stage{width:100%;max-width:430px;height:48vh;height:48svh;display:flex;align-items:center;justify-content:center}
   #board{width:100%;height:100%;display:block;overflow:visible}
   /* the prompt hugs the board: same gap below the mobile whether it is one line or four */
@@ -46,6 +47,7 @@
     .prompt .stitle{font-size:13px;letter-spacing:.14em;color:var(--ink);font-weight:500;line-height:1.5}
   .prompt .sline{font-size:13px;color:var(--dim);line-height:1.5}
   .prompt .sgrid{font-size:17px;letter-spacing:2px;margin-top:4px}
+  .build{margin-top:12px;font-size:11px;color:var(--dim);opacity:.55;font-variant-numeric:tabular-nums}
   .hook{cursor:pointer}
 </style>
 </head>
@@ -63,10 +65,18 @@
   <button class="btn" id="next">Another day</button>
   <button class="btn" id="copy" style="display:none">Copy result</button>
 </footer>
+<div class="build" id="build"></div>
 
 <script src="boards.js"></script>
 <script>
-const BUILD='1.4.0';
+const BUILD='1.4.6';
+/* the build string sits in three places so it can be read without running the page: here,
+   an html attribute, and a comment in the head. Three copies can disagree, so they are
+   checked against each other - a number that lies is worse than one that is hard to read. */
+const BUILD_OK=(function(){ let c=null;
+  [].slice.call(document.head.childNodes).forEach(function(n){
+    if(n.nodeType===8){ const x=/Heft build (\S+)/.exec(n.nodeValue||''); if(x) c=x[1]; } });
+  return document.documentElement.getAttribute('data-build')===BUILD && c===BUILD; })();
 const WIRE='#4d59a6', REST='#c98f4a', LIT='#7ef0ff', INK='#dfe6ff';
 const CELLS={
  pent:'M24 8.5 38.7 19.2 33.1 36.5H14.9L9.3 19.2z',
@@ -102,24 +112,44 @@ const BOARD0=(function(){ const m=/[?&]board=(\d+)/.exec(location.search);
   const v=m?parseInt(m[1],10):0;
   return (v>=1&&v<=PUZZLES.length) ? v-1 : randomBoard(-1); })();
 
-let day=BOARD0, P, stocks, cur, touches, tilt, glow, depth=[], selected=null;
+let day=BOARD0, P, stocks, cur, touches, tilt, glow, depth=[], selected=null, ceilG=0;
 
-/* wordmark: one arc, four risers, measured from the live glyphs */
+/* wordmark: four letters hanging from the top edge of the header, which is the top of the
+   page. Drawn 1:1 in CSS pixels - no scale factor sits between this drawing and the layout
+   it has to meet, which is the boundary that produced every real bug in v1. The letters are
+   centred in the header; the riser length is whatever is left over. The mark is positioned
+   absolutely so it can never feed back into the height it is centring inside. */
 (function(){
- const LX=[56,126,196,266], BOW=10, m=document.getElementById('mark');
- m.innerHTML='<g stroke="'+WIRE+'" fill="none" stroke-linecap="round" stroke-width="1.5" opacity=".8">'
-   +'<path class="arc"/>'+LX.map(function(){return '<path class="drop"/>';}).join('')+'</g>'
-   +LX.map(function(x,k){return '<text class="ltr" x="'+x+'" y="16" text-anchor="middle" '
-     +'font-family="Archivo Black,serif" font-size="50" fill="'+INK+'" dominant-baseline="hanging">'+'HEFT'[k]+'</text>';}).join('');
+ const m=document.getElementById('mark'), hdr=document.querySelector('header');
+ const W=132, F=19.4, LX=[21.7,48.9,76.1,103.3];   // 132/340 of the old 340-unit drawing
  function lay(){
-   const l=[].slice.call(m.querySelectorAll('.ltr')); let x0,x1;
-   try{const a=l[0].getBBox(),b=l[3].getBBox();x0=a.x;x1=b.x+b.width;if(!(x1>x0))throw 0;}
-   catch(e){x0=LX[0]-19;x1=LX[3]+17;}
-   const cx=(x0+x1)/2, wy=function(x){const t=(x-x0)/(x1-x0);return 2-4*BOW*t+4*BOW*t*t;};
-   m.querySelector('.arc').setAttribute('d','M'+x0.toFixed(1)+' 2 Q'+cx.toFixed(1)+' '+(2-2*BOW).toFixed(1)+' '+x1.toFixed(1)+' 2');
-   [].slice.call(m.querySelectorAll('.drop')).forEach(function(p,i){p.setAttribute('d','M'+LX[i]+' '+wy(LX[i]).toFixed(1)+'V27');});
+   const H=hdr.getBoundingClientRect().height;
+   if(!(H>0)) return;
+   const mid=(H-1)/2;                              // centre above the rule, not including it
+   m.setAttribute('viewBox','0 0 '+W+' '+H.toFixed(2));
+   m.setAttribute('width',W); m.setAttribute('height',H.toFixed(2));
+   m.innerHTML='<g class="risers" stroke="'+WIRE+'" fill="none" stroke-linecap="round" '
+     +'stroke-width="1.1" stroke-opacity=".55">'+LX.map(function(){return '<path/>';}).join('')+'</g>'
+     +'<g class="ltrs">'+LX.map(function(x,k){return '<text class="ltr" x="'+x+'" y="'+mid.toFixed(2)
+       +'" text-anchor="middle" dominant-baseline="central" font-family="Archivo Black,serif" '
+       +'font-size="'+F+'" fill="'+INK+'">'+'HEFT'[k]+'</text>';}).join('')+'</g>';
+   // measure the ink, never the text box - a glyph sized from its box cost v1 real time
+   const l=[].slice.call(m.querySelectorAll('.ltr'));
+   let dy=0, dx=0, top=mid-F*0.36;                 // fallback: central baseline, half a cap up
+   try{
+     let y0=1e9,y1=-1e9,x0=1e9;
+     l.forEach(function(t){ const b=t.getBBox(); if(!(b.height>0)) throw 0;
+       y0=Math.min(y0,b.y); y1=Math.max(y1,b.y+b.height); x0=Math.min(x0,b.x); });
+     dy=mid-(y0+y1)/2; top=y0+dy;                  // top gap and bottom gap are equal by centring
+     dx=top-x0;                                    // ...and the left gap is set to match them
+   }catch(e){}
+   l.forEach(function(t,i){ t.setAttribute('x',(LX[i]+dx).toFixed(2));
+                            t.setAttribute('y',(mid+dy).toFixed(2)); });
+   [].slice.call(m.querySelectorAll('.risers path')).forEach(function(p,i){
+     p.setAttribute('d','M'+(LX[i]+dx).toFixed(2)+' 0V'+(top+1.5).toFixed(2)); });
  }
  lay(); if(document.fonts&&document.fonts.ready)document.fonts.ready.then(lay); setTimeout(lay,500);
+ window.addEventListener('resize',lay);
 })();
 
 /* model */
@@ -148,7 +178,7 @@ function load(){
   P=PUZZLES[day]; P._arms=armList(P.tree,[]);
   cur=new Array(P.nh).fill(null); touches=new Array(P.nh).fill(0); hitPts=[];
   tilt=P._arms.map(function(){return {cur:0,ph:Math.random()*6.28};});
-  glow=P._arms.map(function(){return 0;});
+  glow=P._arms.map(function(){return 0;}); ceilG=0;
   depth=[]; (function mk(n,dd){ if(n.t!=='a') return; depth[n._i]=dd; mk(n.l,dd+1); mk(n.r,dd+1); })(P.tree,0);
   stocks=[]; for(let i=0;i<P.k;i++) stocks.push(KEYS[(day*2+i*3)%KEYS.length]);
   if(new Set(stocks).size<P.k) stocks=KEYS.slice(0,P.k);
@@ -242,10 +272,15 @@ function droop(x1,y1,x2,y2,b){
 function draw(t){
   const pos=positions(t); layer.textContent='';
   const rp=pos['a0'].p;
-  layer.appendChild(el('path',{d:'M-34 -38H34',stroke:WIRE,'stroke-width':'1.2',fill:'none',
-    'stroke-opacity':'.35','stroke-linecap':'round'}));
-  layer.appendChild(el('path',{d:'M0 -38V'+rp[1].toFixed(1),stroke:WIRE,'stroke-width':'1.1',fill:'none',
+  // the box's top edge sits flush under the header, so the cord meets the header's rule
+  // wherever the board's x=0 happens to fall — no pinning, no travel, nothing crossing to pixels
+  const cordD='M0 -44V'+rp[1].toFixed(1);
+  layer.appendChild(el('path',{d:cordD,stroke:WIRE,'stroke-width':'1.1',fill:'none',
     'stroke-opacity':'.55','stroke-linecap':'round'}));
+  // the cord lights from the top down, or the lit ceiling would sit above a dark gap
+  if(ceilG>0) layer.appendChild(el('path',{d:cordD,stroke:LIT,'stroke-width':'1.5',fill:'none',
+    'stroke-linecap':'round',filter:'url(#warm)',pathLength:'1','stroke-dasharray':'1 1',
+    'stroke-dashoffset':(1-Math.min(1,ceilG*1.5)).toFixed(4)}));
 
   P._arms.forEach(function(n){
     const g=pos['a'+n._i], on=settled(n), gT=on?glow[n._i]:0;
@@ -308,6 +343,19 @@ function draw(t){
   }
 }
 
+/* The rule under the header is the mobile's ceiling, so it lights with the board - the same
+   single honest signal, arriving at the point everything hangs from. Written only when it
+   changes, not sixty times a second. */
+const hdrEl=document.querySelector('header');
+let ceilPainted=-1;
+function paintCeiling(){
+  if(ceilG===ceilPainted) return;
+  if(ceilG>0 && ceilG<1 && Math.abs(ceilG-ceilPainted)<0.01) return;
+  ceilPainted=ceilG;
+  hdrEl.style.borderBottomColor = ceilG>0 ? mix('#323b78',LIT,ceilG) : '';
+  hdrEl.style.boxShadow = ceilG>0
+    ? '0 1px '+(14*ceilG).toFixed(1)+'px rgba(126,240,255,'+(0.22*ceilG).toFixed(3)+')' : '';
+}
 function frame(t){
   P._arms.forEach(function(n){
     const st=tilt[n._i], q=torques(n), l=q[0], r=q[1];
@@ -318,6 +366,9 @@ function frame(t){
     if(Math.abs(target-st.cur)<0.0002) st.cur=target;   // settle exactly, don't creep forever
     glow[n._i] = boardProved() ? Math.min(1,glow[n._i]+0.05-depth[n._i]*0.006) : 0;
   });
+  // the ceiling leads the root arm by a hair, since the glow spreads downward from it
+  ceilG = boardProved() ? Math.min(1,ceilG+0.06) : 0;
+  paintCeiling();
   reframe(false); draw(t); requestAnimationFrame(frame);
 }
 
@@ -360,8 +411,11 @@ function grid(){ return touches.map(function(n){const c=Math.max(0,n-1);
   return c===0?'🟢':c===1?'🟡':c===2?'🟠':'🔴';}).join(''); }
 function message(){
   const done=solved(), c=corrections();
-  document.getElementById('meta').innerHTML=P.nh+' hooks · '+P.k+' weights<br>'+c+' correction'+(c===1?'':'s')
-    +'<br><span style="opacity:.55">build '+BUILD+(TILT_EXP!==1?' · tilt '+TILT_EXP:'')+(BOW_F!==0.025?' · bow '+BOW_F:'')+'</span>';
+  // the same stamp and separator the shared result uses, so the header and the clipboard agree
+  const cn = c>0 ? '<span style="color:var(--rest)">'+c+'</span>' : c;
+  document.getElementById('meta').innerHTML=stamp()
+    +'<br>'+P.nh+' hooks \u2022 '+P.k+' weights'
+    +'<br>'+cn+' correction'+(c===1?'':'s');
   promptEl.classList.toggle('win',done);
   if(!done){                                   // taking a weight back off retires the result
     const cb=document.getElementById('copy');
@@ -387,6 +441,10 @@ function message(){
     else            promptEl.textContent='Tap anything hanging to take it back.';
   }
 }
+// fixed for the life of the page, so it is written once rather than on every tap
+document.getElementById('build').textContent='build '+BUILD
+  +(BUILD_OK?'':' \u00b7 BUILD MISMATCH')+(TILT_EXP!==1?' \u00b7 tilt '+TILT_EXP:'')
+  +(BOW_F!==0.025?' \u00b7 bow '+BOW_F:'');
 document.getElementById('reset').onclick=function(){var L=lockedHooks();
   for(var i=0;i<P.nh;i++) if(!L.has(i)) cur[i]=null;
   selected=null;syncRack();message();};
