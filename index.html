@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en" data-build="1.4.6">
+<html lang="en" data-build="1.4.7">
 <head>
 <meta charset="utf-8">
-<!-- Heft build 1.4.6 -->
+<!-- Heft build 1.4.7 -->
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Heft</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23161d4a'/%3E%3Cpath d='M8 7H13.5V13.25H18.5V7H24V25H18.5V17.75H13.5V25H8Z' fill='%23dfe6ff'/%3E%3C/svg%3E">
@@ -69,7 +69,7 @@
 
 <script src="boards.js"></script>
 <script>
-const BUILD='1.4.6';
+const BUILD='1.4.7';
 /* the build string sits in three places so it can be read without running the page: here,
    an html attribute, and a comment in the head. Three copies can disagree, so they are
    checked against each other - a number that lies is worse than one that is hard to read. */
@@ -401,28 +401,28 @@ function tapHook(i){
   else if(selected!=null&&used(selected)<P.cap){ cur[i]=selected; touches[i]++; selected=null; }
   syncRack(); message();
 }
-function corrections(){ return touches.reduce(function(s,n){return s+Math.max(0,n-1);},0); }
+function rehangs(){ return touches.reduce(function(s,n){return s+Math.max(0,n-1);},0); }
 function solved(){ return cur.every(function(x){return x!=null;}) && P._arms.every(balanced); }
 const MON=['Jan','Feb','Mar','Apr','May','June','July','Aug','Sept','Oct','Nov','Dec'];
 function stamp(){ const t=new Date(); return 'No '+(day+1)+' • '+MON[t.getMonth()]+' '+t.getDate(); }
-function scoreLine(){ const c=corrections(); return c+' Correction'+(c===1?'':'s'); }
+function scoreLine(){ const c=rehangs(); return c+' Rehang'+(c===1?'':'s'); }
 function resultText(){ return '\u2696\ufe0f H E F T \u2696\ufe0f\n'+stamp()+'\n'+grid()+'\n'+scoreLine(); }
 function grid(){ return touches.map(function(n){const c=Math.max(0,n-1);
   return c===0?'🟢':c===1?'🟡':c===2?'🟠':'🔴';}).join(''); }
 function message(){
-  const done=solved(), c=corrections();
+  const done=solved(), c=rehangs();
   // the same stamp and separator the shared result uses, so the header and the clipboard agree
   const cn = c>0 ? '<span style="color:var(--rest)">'+c+'</span>' : c;
   document.getElementById('meta').innerHTML=stamp()
     +'<br>'+P.nh+' hooks \u2022 '+P.k+' weights'
-    +'<br>'+cn+' correction'+(c===1?'':'s');
+    +'<br>'+cn+' rehang'+(c===1?'':'s');
   promptEl.classList.toggle('win',done);
   if(!done){                                   // taking a weight back off retires the result
     const cb=document.getElementById('copy');
     cb.style.display='none'; cb.classList.remove('go'); cb.textContent='Copy result';
   }
   if(done){
-    promptEl.textContent = c===0?'Level, and not one correction.':'Level, with '+c+'.';
+    promptEl.textContent = c===0?'Level, and not one rehang.':'Level, with '+c+'.';
     promptEl.innerHTML=
       '<div class="stitle">\u2696\ufe0f H E F T \u2696\ufe0f</div>'+
       '<div class="sline">'+stamp()+'</div>'+
