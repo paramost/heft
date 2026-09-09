@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en" data-build="1.4.7">
+<html lang="en" data-build="1.5.0">
 <head>
 <meta charset="utf-8">
-<!-- Heft build 1.4.7 -->
+<!-- Heft build 1.5.0 -->
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Heft</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23161d4a'/%3E%3Cpath d='M8 7H13.5V13.25H18.5V7H24V25H18.5V17.75H13.5V25H8Z' fill='%23dfe6ff'/%3E%3C/svg%3E">
@@ -17,8 +17,8 @@
   body{background:radial-gradient(120% 70% at 50% 0%,var(--b1) 0%,var(--b2) 46%,var(--b3) 100%);
        color:var(--ink);font-family:Karla,system-ui,sans-serif;display:flex;flex-direction:column;
        align-items:center;min-height:100svh;padding:0 12px calc(16px + env(safe-area-inset-bottom))}
-  header{width:100%;max-width:430px;display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:calc(6px + env(safe-area-inset-top)) 0 5px;border-bottom:1px solid rgba(77,89,166,.5);position:sticky;top:0;z-index:5;background:var(--b1)}
-  #mark{position:absolute;left:0;top:0;display:block;overflow:visible;pointer-events:none}
+  header{align-self:stretch;max-width:454px;margin:0 -12px;display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:calc(6px + env(safe-area-inset-top)) 12px 5px;border-bottom:1px solid rgba(77,89,166,.5);position:sticky;top:0;z-index:5;background:var(--b1)}
+  #mark{position:absolute;left:12px;top:0;display:block;overflow:visible;pointer-events:none}
   .meta{font-size:11.5px;color:var(--dim);font-variant-numeric:tabular-nums;text-align:right;line-height:1.2;padding-right:6px}
   .stage{width:100%;max-width:430px;height:48vh;height:48svh;display:flex;align-items:center;justify-content:center}
   #board{width:100%;height:100%;display:block;overflow:visible}
@@ -69,7 +69,7 @@
 
 <script src="boards.js"></script>
 <script>
-const BUILD='1.4.7';
+const BUILD='1.5.0';
 /* the build string sits in three places so it can be read without running the page: here,
    an html attribute, and a comment in the head. Three copies can disagree, so they are
    checked against each other - a number that lies is worse than one that is hard to read. */
@@ -101,6 +101,16 @@ const TILT_EXP=(function(){ const m=/[?&]tilt=([\d.]+)/.exec(location.search);
 const BOW_F=(function(){ const m=/[?&]bow=([\d.]+)/.exec(location.search);
   const v=m?parseFloat(m[1]):0.025; return (v>=0&&v<=0.2)?v:0.025; })();
 
+/* How much the wire is lifted off the background. Brightness and stroke weight only - no
+   opacity is touched, because opacity carries real signals here (a level arm draws at full
+   stroke and full opacity, a leaning one does not) and lifting it would flatten them.
+   ?ink=0 is exactly the 1.4.7 drawing; 1 is the default; 2 is as far as it goes. */
+const INK_F=(function(){ const m=/[?&]ink=([\d.]+)/.exec(location.search);
+  const v=m?parseFloat(m[1]):1; return (v>=0&&v<=2)?v:1; })();
+const WIRE_B=mix(WIRE,INK,0.28*INK_F);
+const WS=1+0.20*INK_F;                            // stroke width scale
+function sw(base){ return (base*WS).toFixed(2); }
+
 /* Boards are drawn at random for now; ordering waits for the daily. ?board=N pins one,
    so a link can still point at a specific puzzle. */
 function randomBoard(not){
@@ -112,7 +122,18 @@ const BOARD0=(function(){ const m=/[?&]board=(\d+)/.exec(location.search);
   const v=m?parseInt(m[1],10):0;
   return (v>=1&&v<=PUZZLES.length) ? v-1 : randomBoard(-1); })();
 
-let day=BOARD0, P, stocks, cur, touches, tilt, glow, depth=[], selected=null, ceilG=0;
+let day=BOARD0, P, stocks, rackOrder, cur, touches, tilt, glow, depth=[], selected=null, ceilG=0;
+
+/* Shapes and rack positions are shuffled per board, seeded from the board index - so they are
+   the same for everyone on the same board, and a shuffle rather than a rotation. Position must
+   carry nothing: the rack used to render lightest-to-heaviest on all 144 boards, which handed
+   over the full ranking of the four weights in a game whose premise is that you never learn
+   what anything weighs. */
+function rng(seed){ let s=(seed>>>0)||1;
+  return function(){ s=(Math.imul(s,1664525)+1013904223)>>>0; return s/4294967296; }; }
+function shuffled(arr,rand){ const a=arr.slice();
+  for(let i=a.length-1;i>0;i--){ const j=Math.floor(rand()*(i+1)); const t=a[i];a[i]=a[j];a[j]=t; }
+  return a; }
 
 /* wordmark: four letters hanging from the top edge of the header, which is the top of the
    page. Drawn 1:1 in CSS pixels - no scale factor sits between this drawing and the layout
@@ -128,8 +149,8 @@ let day=BOARD0, P, stocks, cur, touches, tilt, glow, depth=[], selected=null, ce
    const mid=(H-1)/2;                              // centre above the rule, not including it
    m.setAttribute('viewBox','0 0 '+W+' '+H.toFixed(2));
    m.setAttribute('width',W); m.setAttribute('height',H.toFixed(2));
-   m.innerHTML='<g class="risers" stroke="'+WIRE+'" fill="none" stroke-linecap="round" '
-     +'stroke-width="1.1" stroke-opacity=".55">'+LX.map(function(){return '<path/>';}).join('')+'</g>'
+   m.innerHTML='<g class="risers" stroke="'+WIRE_B+'" fill="none" stroke-linecap="round" '
+     +'stroke-width="'+sw(1.1)+'" stroke-opacity=".55">'+LX.map(function(){return '<path/>';}).join('')+'</g>'
      +'<g class="ltrs">'+LX.map(function(x,k){return '<text class="ltr" x="'+x+'" y="'+mid.toFixed(2)
        +'" text-anchor="middle" dominant-baseline="central" font-family="Archivo Black,serif" '
        +'font-size="'+F+'" fill="'+INK+'">'+'HEFT'[k]+'</text>';}).join('')+'</g>';
@@ -180,8 +201,9 @@ function load(){
   tilt=P._arms.map(function(){return {cur:0,ph:Math.random()*6.28};});
   glow=P._arms.map(function(){return 0;}); ceilG=0;
   depth=[]; (function mk(n,dd){ if(n.t!=='a') return; depth[n._i]=dd; mk(n.l,dd+1); mk(n.r,dd+1); })(P.tree,0);
-  stocks=[]; for(let i=0;i<P.k;i++) stocks.push(KEYS[(day*2+i*3)%KEYS.length]);
-  if(new Set(stocks).size<P.k) stocks=KEYS.slice(0,P.k);
+  const rand=rng((day+1)*2654435761);
+  stocks=shuffled(KEYS,rand).slice(0,P.k);          // distinct by construction
+  rackOrder=shuffled(stocks.map(function(_,i){return i;}),rand);
   selected=null;
 
   document.getElementById('copy').style.display='none';
@@ -275,7 +297,7 @@ function draw(t){
   // the box's top edge sits flush under the header, so the cord meets the header's rule
   // wherever the board's x=0 happens to fall — no pinning, no travel, nothing crossing to pixels
   const cordD='M0 -44V'+rp[1].toFixed(1);
-  layer.appendChild(el('path',{d:cordD,stroke:WIRE,'stroke-width':'1.1',fill:'none',
+  layer.appendChild(el('path',{d:cordD,stroke:WIRE_B,'stroke-width':sw(1.1),fill:'none',
     'stroke-opacity':'.55','stroke-linecap':'round'}));
   // the cord lights from the top down, or the lit ceiling would sit above a dark gap
   if(ceilG>0) layer.appendChild(el('path',{d:cordD,stroke:LIT,'stroke-width':'1.5',fill:'none',
@@ -290,7 +312,7 @@ function draw(t){
     const d='M'+g.l[0].toFixed(1)+' '+g.l[1].toFixed(1)
       +' Q'+cxA.toFixed(1)+' '+cyA.toFixed(1)+' '+g.r[0].toFixed(1)+' '+g.r[1].toFixed(1);
     const lev=balanced(n);
-    layer.appendChild(el('path',{d,stroke:WIRE,'stroke-width':lev?'2.1':'1.6',fill:'none',
+    layer.appendChild(el('path',{d,stroke:WIRE_B,'stroke-width':lev?sw(2.1):sw(1.6),fill:'none',
       'stroke-linecap':'round','stroke-opacity':lev?'1':'.7'}));
     if(gT>0) layer.appendChild(el('path',{d,stroke:LIT,'stroke-width':'2.5',fill:'none','stroke-linecap':'round',
       filter:'url(#warm)',pathLength:'1','stroke-dasharray':'1 1','stroke-dashoffset':(1-Math.min(1,gT*1.5)).toFixed(4)}));
@@ -300,14 +322,14 @@ function draw(t){
       const t=(X-g.l[0])/(g.r[0]-g.l[0]), u=1-t;
       return u*u*g.l[1] + 2*u*t*cyA + t*t*g.r[1];
     };
-    layer.appendChild(el('circle',{cx:g.p[0].toFixed(1),cy:yAtX(g.p[0]).toFixed(1),r:'2.6',
-      fill:on?LIT:WIRE,'fill-opacity':on?(0.4+0.55*gT):'.9'}));
+    layer.appendChild(el('circle',{cx:g.p[0].toFixed(1),cy:yAtX(g.p[0]).toFixed(1),r:(2.6*Math.sqrt(WS)).toFixed(2),
+      fill:on?LIT:WIRE_B,'fill-opacity':on?(0.4+0.55*gT):'.9'}));
     ['l','r'].forEach(function(side){
       const units=side==='l'?n.ld:n.rd, end=g[side];
       for(let u2=1;u2<=units;u2++){
         const X=g.p[0]+(end[0]-g.p[0])*(u2/units);
-        layer.appendChild(el('circle',{cx:X.toFixed(1),cy:yAtX(X).toFixed(1),r:'1.8',
-          fill:on?LIT:WIRE,'fill-opacity':on?(0.3+0.65*gT):(lev?'.95':'.6')}));
+        layer.appendChild(el('circle',{cx:X.toFixed(1),cy:yAtX(X).toFixed(1),r:(1.8*Math.sqrt(WS)).toFixed(2),
+          fill:on?LIT:WIRE_B,'fill-opacity':on?(0.3+0.65*gT):(lev?'.95':'.6')}));
       }
       const ch=side==='l'?n.l:n.r, cp=ch.t==='h'?pos['h'+ch.i]:pos['a'+ch._i].p;
       let stop=cp[1];
@@ -316,7 +338,7 @@ function draw(t){
         stop = (t2==null) ? cp[1]-15.5                       // meets the empty socket
              : cp[1]-24*(S/48) + CELL_TOP[stocks[t2]]*(S/48); // meets the weight itself
       }
-      layer.appendChild(el('path',{d:droop(end[0],end[1],cp[0],stop,1.2),stroke:WIRE,'stroke-width':'1.2',
+      layer.appendChild(el('path',{d:droop(end[0],end[1],cp[0],stop,1.2),stroke:WIRE_B,'stroke-width':sw(1.2),
         fill:'none','stroke-opacity':'.65','stroke-linecap':'round'}));
     });
   });
@@ -330,7 +352,7 @@ function draw(t){
       const armed=selected!=null;
       if(armed) g.appendChild(el('circle',{cx:p[0],cy:p[1],r:'15.5',fill:REST,'fill-opacity':'.10'}));
       g.appendChild(el('circle',{cx:p[0],cy:p[1],r:'15.5',fill:'none',
-        stroke:armed?REST:WIRE,'stroke-width':armed?'1.5':'1.1',
+        stroke:armed?REST:WIRE_B,'stroke-width':armed?sw(1.5):sw(1.1),
         'stroke-opacity':armed?'.9':'.45',filter:armed?'url(#warm)':''}));
     } else {
       const l=litFor(i), col=mix(REST,LIT,l), pop=1+0.15*Math.sin(l*Math.PI), sc=(S/48)*pop;
@@ -352,9 +374,12 @@ function paintCeiling(){
   if(ceilG===ceilPainted) return;
   if(ceilG>0 && ceilG<1 && Math.abs(ceilG-ceilPainted)<0.01) return;
   ceilPainted=ceilG;
-  hdrEl.style.borderBottomColor = ceilG>0 ? mix('#323b78',LIT,ceilG) : '';
+  hdrEl.style.borderBottomColor = mix(mix('#161d4a',WIRE_B,0.5),LIT,ceilG);
+  // a solid shadow thickens the rule downward to a level arm's stroke without shifting anything
+  const grow=((2.1*WS-1)*ceilG).toFixed(2);
   hdrEl.style.boxShadow = ceilG>0
-    ? '0 1px '+(14*ceilG).toFixed(1)+'px rgba(126,240,255,'+(0.22*ceilG).toFixed(3)+')' : '';
+    ? '0 '+grow+'px 0 '+mix(mix('#161d4a',WIRE_B,0.5),LIT,ceilG)
+      +', 0 '+grow+'px '+(14*ceilG).toFixed(1)+'px rgba(126,240,255,'+(0.30*ceilG).toFixed(3)+')' : '';
 }
 function frame(t){
   P._arms.forEach(function(n){
@@ -377,9 +402,10 @@ const rack=document.getElementById('rack'), promptEl=document.getElementById('pr
 function used(t){ return cur.filter(function(x){return x===t;}).length; }
 function buildRack(){
   rack.textContent='';
-  stocks.forEach(function(key,type){
+  rackOrder.forEach(function(type){
     const b=document.createElement('button'); b.className='stock';
-    b.innerHTML='<svg viewBox="0 0 48 48"><path d="'+CELLS[key]+'" fill="'+REST+'"/></svg>'
+    b.setAttribute('data-type',type);
+    b.innerHTML='<svg viewBox="0 0 48 48"><path d="'+CELLS[stocks[type]]+'" fill="'+REST+'"/></svg>'
       +'<div class="allow">'+Array.from({length:P.cap},function(){return '<i></i>';}).join('')+'</div>';
     b.onclick=function(){selected=(selected===type)?null:type;syncRack();message();};
     rack.appendChild(b);
@@ -387,8 +413,8 @@ function buildRack(){
   syncRack();
 }
 function syncRack(){
-  Array.prototype.slice.call(rack.children).forEach(function(c,type){
-    const u=used(type);
+  Array.prototype.slice.call(rack.children).forEach(function(c,pos){
+    const type=rackOrder[pos], u=used(type);
     Array.prototype.slice.call(c.querySelectorAll('.allow i')).forEach(function(d,j){d.classList.toggle('used',j<u);});
     c.classList.toggle('out',u>=P.cap);
     c.classList.toggle('on',selected===type&&u<P.cap);
@@ -443,7 +469,7 @@ function message(){
 }
 // fixed for the life of the page, so it is written once rather than on every tap
 document.getElementById('build').textContent='build '+BUILD
-  +(BUILD_OK?'':' \u00b7 BUILD MISMATCH')+(TILT_EXP!==1?' \u00b7 tilt '+TILT_EXP:'')
+  +(BUILD_OK?'':' \u00b7 BUILD MISMATCH')+(INK_F!==1?' \u00b7 ink '+INK_F:'')+(TILT_EXP!==1?' \u00b7 tilt '+TILT_EXP:'')
   +(BOW_F!==0.025?' \u00b7 bow '+BOW_F:'');
 document.getElementById('reset').onclick=function(){var L=lockedHooks();
   for(var i=0;i<P.nh;i++) if(!L.has(i)) cur[i]=null;
