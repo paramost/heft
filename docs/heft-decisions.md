@@ -481,20 +481,22 @@ leaves open whether the game needs a curve at all.
 
 ## Current state — v1.5, the baseline for Phase 2
 
-**1.5.2 is a deliberate stopping point.** The game is polished visually and mechanically; what it
+**1.5.12 is a deliberate stopping point.** The game is polished visually and mechanically; what it
 lacks is persistence, the daily, and any measurement of whether people finish a board. Those are
 Phase 2 and Phase 3. Nothing below is expected to change while that work happens, and a change to
 any of it should be a decision rather than a side effect.
 
-Two files, ~66 KB together, deployed from GitHub via Vercel to `heftdaily.com`:
-`index.html` (~24 KB of code) and `boards.js` (the 144-board bank, one board per line).
+Two files deployed from GitHub via Vercel to `heftdaily.com`: `index.html` (~33 KB of code) and
+`boards.js` (the 144-board bank, ~42 KB, one board per line). `tools/generate.py` is in the repo
+but not served.
 
 - **144 boards** — 96 at five hooks, 48 at six
 - **Selection is random** on load and on "Another day", never the same board twice running.
   `?board=N` pins one. Ordering waits for the daily.
 - Drawn from **14 five-hook skeletons** (all) and **18 six-hook skeletons** (of 42)
 - Depths 3, 4 and 5 — 49, 62 and 33 boards
-- Four weights per board, all used in the solution; shapes and rack order shuffled per board
+- Four weights per board, all used in the solution; shape-to-rank mapping fixed and the rack
+  sorted lightest to heaviest, on every board
 - Every board: unique solution, no symmetrical arms, nothing crossing, 20% imbalance floor
 - Score is rehangs — hangs minus hooks
 - Geometry: 22px per lever unit, 56px between arms, 30px riser, **44px weight glyphs**, 15° range
@@ -585,8 +587,9 @@ because without it a refresh silently erases your rehangs and the day becomes re
 finished day should come back solved and frozen; and browsing boards must write nothing, or it
 becomes a way off the daily. See `heft-plan.md`.
 
-**Hanging the mobile from the wordmark.** See the measurement above. Kept for v2 in the
-moving-attachment form only.
+**Hanging the mobile from the wordmark.** Routed around rather than solved — the rule under the
+header is the ceiling, and a line has no particular x, so nothing needs pinning or travelling.
+See *The header is the ceiling*. The measurement stands; the problem it measured is gone.
 
 ---
 
@@ -595,8 +598,9 @@ moving-attachment form only.
 **Does the tilt read as progress or as fiddling?** Nobody has said in so many words whether they
 read the mobile or fiddle with it.
 
-**Does the scrambled rack cost anything ergonomically?** A consistent left-to-right order may have
-been doing quiet work while reading a board mid-play. Unmeasured, and a phone question.
+**Is the ordering too generous?** The rack is sorted and the mapping fixed, as in v1. Whether that
+makes the game too easy cannot be judged by anyone who already knows the mapping — it needs a
+tester who has never played. Board 9, the only two-fork board, is the fairest test.
 
 **Is `ink=1` the right value?** Built as a dial precisely because nobody knows. Compare 0, 1, 1.5
 and 2 on a phone.
