@@ -154,19 +154,19 @@ compressing the whole scale. It survives as `?tilt=N`.
 
 **An all-arms imbalance floor.** Not expensive — impossible. Zero of 144 boards survive it.
 
-**A/B against the locking build.** `heft-locking.html` stays internal. Testing both against the same
-people measures which they saw first.
+**A/B against the locking build.** Not possible: `heft-locking.html` no longer exists and cannot be
+regenerated. The reasoning is kept anyway — testing both designs against the same people measures
+which they saw first, not which is better.
 
 ---
 
 ## Files
 
-- `index.html` — the game, build 1.4.6
+- `index.html` — the game
 - `boards.js` — the 144-board bank, one board per line
-- `_preview.html` — generated, never committed; `index.html` with the bank inlined so a
-  single-file viewer can run it. In `.gitignore`.
-- `heft-locking.html` — the earlier locking design, internal only
+- `tools/generate.py` — the board generator. Python 3, standard library only
 - `docs/heft-decisions.md` — why the mechanics are the way they are
+- `docs/heft-generation.md` — the generation spec the generator was written against
 - `docs/heft-publishing.md` — how to host and gather feedback
 
 ---

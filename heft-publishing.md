@@ -10,18 +10,13 @@ Everything needed to put Heft in front of testers. Assumes no build tools and no
 Vercel serves both as-is. `index.html` is ~24 KB of code and reads `PUZZLES` as a global, so
 `boards.js` must load first. Also in the repo: `/docs`.
 
-**Not committed:** `_preview.html`, which is `index.html` with the bank inlined. It is generated
-mechanically so it cannot drift, and it exists only so a single-file viewer can run the game. It is
-in `.gitignore`. It cannot catch a two-file failure — there is nothing in it to fail to load.
-
 **Also in this repo:** `tools/generate.py`, the board generator. It is not served — Vercel ignores
 it — and the boards it produces are public in `boards.js` anyway, solutions included, so there is
 nothing in it worth hiding. The game has to
 be public; the thing that makes new boards does not, and it is the part worth protecting. Anyone can
 copy 144 boards — making the 145th means rebuilding the reasoning behind them.
 
-Also excluded: `heft-locking.html` and the design reference sheets. They are history rather than
-product, and if they sit in the public repo someone will eventually deploy the wrong file.
+Also excluded: the design reference sheets. They are history rather than product.
 
 ---
 
@@ -137,15 +132,7 @@ board. Nobody writes "I didn't understand it" — they just close the tab.
 
 ---
 
-## 7. Only v1 goes out
-
-`heft-locking.html` is the earlier design and stays internal. It's a genuinely different game —
-branches lock permanently when balanced — and putting it in front of the same people would tell you
-which they saw first, not which is better.
-
----
-
-## 8. Known limits to expect in feedback
+## 7. Known limits to expect in feedback
 
 Things that are already understood, so they don't need re-diagnosing when someone raises them:
 

@@ -24,7 +24,7 @@ ratios, which are the puzzle.
 
 - `index.html` — the game. ~24 KB of code, no build step. Vercel serves it as-is.
 - `boards.js` — the 144-board bank, one board per line, loaded before the game script.
-- `docs/` — decision record, project plan, publishing notes, handoff.
+- `docs/` — decision record, project plan, generation spec, publishing notes.
 
 - `tools/generate.py` — the board generator. Python 3, standard library only, no dependencies.
 
@@ -36,11 +36,6 @@ property code against `boards.js` before trusting it on new boards.
 The bank was split out of `index.html` in 1.4.0. It had been a single 42 KB line — 63% of the
 file — which made every one-line edit expensive and every diff unreadable. The game reads
 `PUZZLES` as a global, so the load order matters and there is no module system involved.
-
-**A preview file, never committed.** `_preview.html` is `index.html` with `boards.js` inlined,
-generated mechanically so it cannot drift. It exists because a two-file game will not run from a
-single-file viewer. It is in `.gitignore`; do not deploy it. It also cannot catch a two-file
-failure, by construction — there is nothing for it to fail to load.
 
 ## URL parameters
 
