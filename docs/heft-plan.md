@@ -165,6 +165,7 @@ which they saw first, not which is better.
 - `index.html` — the game
 - `boards.js` — the 144-board bank, one board per line
 - `tools/generate.py` — the board generator. Python 3, standard library only
+- `docs/heft-handoff.md` — start here: how to work on this, and nothing that can go stale
 - `docs/heft-decisions.md` — why the mechanics are the way they are
 - `docs/heft-generation.md` — the generation spec the generator was written against
 - `docs/heft-plan.md` — this file
