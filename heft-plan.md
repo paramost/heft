@@ -168,7 +168,6 @@ people measures which they saw first.
 - `heft-locking.html` — the earlier locking design, internal only
 - `docs/heft-decisions.md` — why the mechanics are the way they are
 - `docs/heft-publishing.md` — how to host and gather feedback
-- `docs/heft-handoff.md` — the prompt for starting a new session
 
 ---
 
