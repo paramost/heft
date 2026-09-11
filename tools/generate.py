@@ -205,7 +205,6 @@ def columns(tree, nh, vals, cap, sol, deep=True):
         return col
 
     k = len(vals)
-    rd = scale(tree)
     low = n_read = 0
     inv = n_swap = 0
     conf = n_conf = 0
