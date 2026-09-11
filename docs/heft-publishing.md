@@ -7,7 +7,7 @@ Everything needed to put Heft in front of testers. Assumes no build tools and no
 ## 1. What ships
 
 **`index.html`** and **`boards.js`** at the repo root are the game. No build step, no server logic;
-Vercel serves both as-is. `index.html` is ~24 KB of code and reads `PUZZLES` as a global, so
+Vercel serves both as-is. `index.html` is ~33 KB of code and reads `PUZZLES` as a global, so
 `boards.js` must load first. Also in the repo: `/docs`.
 
 **Also in this repo:** `tools/generate.py`, the board generator. It is not served — Vercel ignores
