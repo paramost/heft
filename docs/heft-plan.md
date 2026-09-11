@@ -167,6 +167,7 @@ which they saw first, not which is better.
 - `tools/generate.py` — the board generator. Python 3, standard library only
 - `docs/heft-decisions.md` — why the mechanics are the way they are
 - `docs/heft-generation.md` — the generation spec the generator was written against
+- `docs/heft-plan.md` — this file
 - `docs/heft-publishing.md` — how to host and gather feedback
 
 ---
