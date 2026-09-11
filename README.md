@@ -22,9 +22,13 @@ ratios, which are the puzzle.
 
 ## Repo
 
-- `index.html` — the game. ~24 KB of code, no build step. Vercel serves it as-is.
+- `index.html` — the game. ~33 KB of code, no build step. Vercel serves it as-is.
 - `boards.js` — the 144-board bank, one board per line, loaded before the game script.
 - `docs/` — decision record, project plan, generation spec, publishing notes.
+
+- `vercel.json` — one header rule: `Cache-Control: public, max-age=0, must-revalidate` on every
+  path, so a deploy is never served from a stale cache. This is what stops the two-file trap
+  below from biting in practice.
 
 - `tools/generate.py` — the board generator. Python 3, standard library only, no dependencies.
 
@@ -39,7 +43,7 @@ file — which made every one-line edit expensive and every diff unreadable. The
 
 ## URL parameters
 
-All three are testing affordances. None changes the default experience.
+All six are testing affordances. None changes the default experience.
 
 | parameter | default | effect |
 |---|---|---|
