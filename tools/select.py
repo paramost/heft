@@ -11,14 +11,17 @@ Two checks are applied here that the generator does not make, both from the deci
   measured the same way). Glyph ink is 31.8 units wide at most, so that is 5.5 units of daylight
   at the worst tilt corner.
 - **Nothing crosses.** No arm, riser or cord may intersect another it does not meet at a joint,
-  and no line may pass through the ink of a weight it does not hold. Checked at the same tilt
-  corners. The generator emits boards where sibling subtrees run straight through each other;
+  and no line may enter the 44-unit box of a weight it does not hold - the box, not the ink,
+  because a line ends in a 4.5-unit pulley (board 16 of the 1.6.0 bank had one sitting on a
+  square). The generator emits boards where sibling subtrees run straight through each other;
   this is where they are stopped.
 
-Selection is topology-first: fill each shape's slot before taking a second board from any
-shape, so the bank is as varied as the pool allows rather than concentrating on whatever shape
-happens to score well. Within a shape, boards are ranked by weight-ratio band (6-12 first),
-then fork count, then leaf-floor pass, then a seeded shuffle.
+Selection is a scored greedy pick. A board scores on fork count, on whether its root forks (no
+lone hook at the top), on its weight-ratio band (6-12 first) and on the leaf floor; each board
+already taken from a shape discounts the next one from that shape; and boards with a lone hook
+at the root are allowed up to a share of the bank (--lone-root-max) rather than banned. The
+1.6.0 bank was filled one board per shape in rotation, which made 28 lopsided shapes into 69%
+of the bank; this is the flexible version of that.
 
 Python 3 standard library only.
 """
@@ -30,9 +33,10 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from generate import U, DROP, HOOKDROP, MAX_TILT, FLOOR_DEG
 
 MIN_HOOK_GAP = 37.3      # the shipped bank's worst case over reachable states (board 51), same measure
-GLYPH_HALF_W = 14.6      # 31.8 units of ink at S/48, halved
+GLYPH_HALF_W = 14.6      # 31.8 units of ink at S/48, halved - glyph against glyph
 GLYPH_HALF_H = 13.3      # 29 units of ink at S/48, halved
-PUL = 4.5
+BOX_HALF = 22.0          # the weight's whole 44-unit box - nothing drawn may enter it
+PUL = 4.5                # pulley radius: a line ends in a wheel, which is why the box, not the ink
 
 
 # ---------------------------------------------------------------- geometry, as index.html draws it
@@ -129,7 +133,7 @@ def drawn_tilts(arms, masses):
 
 def _violations(segs, hooks, seg_pairs, hook_pairs, ink_pairs):
     """Which of the watched pairs fail in this layout."""
-    half_diag = math.hypot(GLYPH_HALF_W, GLYPH_HALF_H)
+    half_diag = math.hypot(BOX_HALF, BOX_HALF)
     for i, j in hook_pairs:
         if math.dist(hooks[i], hooks[j]) < MIN_HOOK_GAP:
             return "gap"
@@ -145,7 +149,7 @@ def _violations(segs, hooks, seg_pairs, hook_pairs, ink_pairs):
         L2 = dx * dx + dy * dy or 1.0
         t = max(0.0, min(1.0, ((h[0] - a1[0]) * dx + (h[1] - a1[1]) * dy) / L2))
         cx, cy = a1[0] + t * dx, a1[1] + t * dy
-        if abs(cx - h[0]) < GLYPH_HALF_W and abs(cy - h[1]) < GLYPH_HALF_H:
+        if abs(cx - h[0]) < BOX_HALF and abs(cy - h[1]) < BOX_HALF:
             return "ink"
     return None
 
@@ -200,51 +204,107 @@ def band_rank(r):
     return 0 if 6 <= r < 12 else 1 if 12 <= r < 25 else 2 if r < 6 else 3 if r < 50 else 4
 
 
+def leaves(n):
+    return 1 if n["t"] == "h" else leaves(n["l"]) + leaves(n["r"])
+
+
+def lone_root(tree):
+    """A lone hook on one side of the root arm: 5 of 6 weights hang from the other side."""
+    return min(leaves(tree["l"]), leaves(tree["r"])) == 1
+
+
+def score(b, w):
+    c = b["cols"]
+    return (w["fork"] * c["forks"]
+            + (0 if lone_root(b["tree"]) else w["root"])
+            + [1.0, 0.5, 0.3, 0.2, 0.0][band_rank(c["ratio"])] * w["ratio"]
+            + (w["floor"] if c["leaf_floor_ok"] else 0))
+
+
+def choose(ok, n, w, topo_penalty, lone_max, rnd):
+    """Greedy: the best-scoring board, each shape discounted by how many of it are already in,
+    lopsided boards allowed up to a share of the bank. Flexible where the old per-shape cap was
+    rigid: a strong shape can contribute six boards, a weak one none."""
+    for b in ok:
+        b["_s"] = score(b, w) + rnd.random() * 0.01          # the jitter only breaks ties
+    chosen, per_topo, lone = [], Counter(), 0
+    pool = list(ok)
+    while pool and len(chosen) < n:
+        cap_hit = lone >= lone_max * n
+        best, best_v = None, -1e9
+        for b in pool:
+            if cap_hit and lone_root(b["tree"]):
+                continue
+            v = b["_s"] - topo_penalty * per_topo[b["cols"]["topo"]]
+            if v > best_v:
+                best, best_v = b, v
+        if best is None:
+            break
+        pool.remove(best); chosen.append(best)
+        per_topo[best["cols"]["topo"]] += 1
+        lone += lone_root(best["tree"])
+    for b in ok:
+        b.pop("_s", None)
+    return chosen
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--pool", required=True)
+    ap.add_argument("--pool", required=True, nargs="+")
     ap.add_argument("--out", default="boards.js")
     ap.add_argument("--n", type=int, default=144)
-    ap.add_argument("--per-topo", type=int, default=4)
+    ap.add_argument("--topo-penalty", type=float, default=0.8,
+                    help="score discount per board already taken from the same shape")
+    ap.add_argument("--lone-root-max", type=float, default=0.33,
+                    help="largest share of the bank with a lone hook at the root (1 = no cap)")
+    ap.add_argument("--w-fork", type=float, default=1.5)
+    ap.add_argument("--w-root", type=float, default=1.0)
+    ap.add_argument("--w-ratio", type=float, default=1.0)
+    ap.add_argument("--w-floor", type=float, default=0.3)
     ap.add_argument("--seed", type=int, default=1)
     ap.add_argument("--source", default="", help="how the pool was made, for the file header")
+    ap.add_argument("--checked", default="", help="also write the boards that pass the checks here")
     args = ap.parse_args()
 
-    pool = [json.loads(l) for l in open(args.pool) if l.strip()]
+    pool = []
+    for f in args.pool:
+        pool += [json.loads(l) for l in open(f) if l.strip()]
     rnd = random.Random(args.seed)
     ok, why = [], Counter()
     for b in pool:
+        if b.get("_ok"):
+            ok.append(b); continue
         v = clear(b["tree"], b["nh"], b["vals"], b["cap"])
         if v:
             why[v] += 1
         else:
+            b["_ok"] = True
             ok.append(b)
     print("pool %d: %d usable; dropped %s" % (len(pool), len(ok), dict(why)))
+    if args.checked:
+        with open(args.checked, "w") as fh:
+            for b in ok:
+                fh.write(json.dumps(b, separators=(",", ":")) + "\n")
+    print("usable: hooks %s, forks %s, %d topologies, %d with a lone hook at the root" % (
+        dict(sorted(Counter(b["nh"] for b in ok).items())),
+        dict(sorted(Counter(b["cols"]["forks"] for b in ok).items())),
+        len(set(b["cols"]["topo"] for b in ok)), sum(lone_root(b["tree"]) for b in ok)))
 
-    by_topo = defaultdict(list)
-    for b in ok:
-        by_topo[b["cols"]["topo"]].append(b)
-    for topo, bs in by_topo.items():
-        rnd.shuffle(bs)
-        bs.sort(key=lambda b: (band_rank(b["cols"]["ratio"]), -b["cols"]["forks"],
-                               not b["cols"]["leaf_floor_ok"]))
-    topos = sorted(by_topo, key=lambda t: (-max(b["cols"]["forks"] for b in by_topo[t]), t))
-
-    chosen = []
-    for rnd_i in range(args.per_topo):
-        for t in topos:
-            if rnd_i < len(by_topo[t]) and len(chosen) < args.n:
-                chosen.append(by_topo[t][rnd_i])
+    w = {"fork": args.w_fork, "root": args.w_root, "ratio": args.w_ratio, "floor": args.w_floor}
+    chosen = choose(ok, args.n, w, args.topo_penalty, args.lone_root_max, rnd)
     if len(chosen) < args.n:
-        print("WARNING: only %d boards at %d per topology" % (len(chosen), args.per_topo))
+        print("WARNING: only %d boards" % len(chosen))
     rnd.shuffle(chosen)
 
     nh = Counter(b["nh"] for b in chosen)
     forks = Counter(b["cols"]["forks"] for b in chosen)
     topo_n = len(set(b["cols"]["topo"] for b in chosen))
+    per = Counter(b["cols"]["topo"] for b in chosen)
     k = Counter(b["k"] for b in chosen)
-    print("selected %d: hooks %s, weights %s, forks %s, %d topologies" %
-          (len(chosen), dict(sorted(nh.items())), dict(sorted(k.items())), dict(sorted(forks.items())), topo_n))
+    lone = sum(lone_root(b["tree"]) for b in chosen)
+    print("selected %d: hooks %s, weights %s, forks %s, %d topologies (max %d per shape), %d lone-root (%.0f%%)" %
+          (len(chosen), dict(sorted(nh.items())), dict(sorted(k.items())), dict(sorted(forks.items())),
+           topo_n, max(per.values()) if per else 0, lone, 100 * lone / max(1, len(chosen))))
 
     lines = []
     for b in chosen:

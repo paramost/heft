@@ -308,6 +308,8 @@ def main():
     ap.add_argument("--verify", action="store_true",
                     help="check the property code against an existing boards.js")
     ap.add_argument("--bank", default="boards.js")
+    ap.add_argument("--root-fork", action="store_true",
+                    help="only shapes whose root arm carries two arms - no lone hook at the top")
     args = ap.parse_args()
 
     if args.verify:
@@ -324,6 +326,11 @@ def main():
         return
 
     shapes = {n: topologies(n) for n in args.hooks}
+    if args.root_fork:
+        # a shape is a nested tuple; a leaf is not. The root forks when neither child is a leaf.
+        shapes = {n: [s for s in ss if isinstance(s[0], tuple) and isinstance(s[1], tuple)]
+                  for n, ss in shapes.items()}
+        print("root-fork shapes:", {n: len(ss) for n, ss in shapes.items()})
     rnd = random.Random(args.seed)
     kept, seen_sig = [], set()
     for _ in range(args.samples):
