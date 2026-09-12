@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en" data-build="1.6.5">
+<html lang="en" data-build="1.6.6">
 <head>
 <meta charset="utf-8">
-<!-- Heft build 1.6.5 -->
+<!-- Heft build 1.6.6 -->
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Heft</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23161d4a'/%3E%3Cpath d='M8 7H13.5V13.25H18.5V7H24V25H18.5V17.75H13.5V25H8Z' fill='%23dfe6ff'/%3E%3C/svg%3E">
@@ -69,7 +69,7 @@
 
 <script src="boards.js"></script>
 <script>
-const BUILD='1.6.5';
+const BUILD='1.6.6';
 /* the build string sits in three places so it can be read without running the page: here,
    an html attribute, and a comment in the head. Three copies can disagree, so they are
    checked against each other - a number that lies is worse than one that is hard to read. */
@@ -96,9 +96,10 @@ const WIRE='#4d59a6', REST='#c98f4a', LIT='#7ef0ff', INK='#dfe6ff';
    Nothing here states an ordering. What is left is apparent weight, and it is the hint: nothing
    on screen says which is heavier, the player forms a hypothesis and must hang something to find
    out. Do not strengthen the cue - exaggerated it becomes the label this avoids. */
-/* Two glyph sets, for the phone to choose between. FLAT is 1.6.1's: flat tops, points down,
-   the square in. POINT is 1.6.0's: pointed tops, the diamond in. ?glyphs=point draws the second
-   and prints beside the build number. Both are ordered lightest to heaviest by ink area. */
+/* Two glyph sets. POINT is the default from 1.6.6: pointed tops, the diamond in - play chose
+   it over the flat set on a phone. FLAT is 1.6.1's: flat tops, points down, the square in;
+   ?glyphs=flat draws it and prints beside the build number. Both are ordered lightest to
+   heaviest by ink area. */
 const GLYPH_SETS={
  flat:{
   cells:{
@@ -123,7 +124,7 @@ const GLYPH_SETS={
   top:{diamond:9.5, prism:10.23, hex:9.5, pent:9.5, house:9.5},
  },
 };
-const GLYPHS=(function(){ const m=location.search.match(/[?&]glyphs=(point|flat)/); return m?m[1]:'flat'; })();
+const GLYPHS=(function(){ const m=location.search.match(/[?&]glyphs=(point|flat)/); return m?m[1]:'point'; })();
 const CELLS=GLYPH_SETS[GLYPHS].cells;
 const KEYS=Object.keys(CELLS);
 const ORDERED=GLYPH_SETS[GLYPHS].ordered;   // lightest to heaviest, by apparent weight
@@ -560,7 +561,7 @@ function message(){
 }
 // fixed for the life of the page, so it is written once rather than on every tap
 document.getElementById('build').textContent='build '+BUILD
-  +(BUILD_OK?'':' \u00b7 BUILD MISMATCH')+(INK_F!==1?' \u00b7 ink '+INK_F:'')+(FLOOR_DEG!==1.25?' \u00b7 floor '+FLOOR_DEG:'')+(Math.abs(MAX_TILT-15*Math.PI/180)>1e-9?' \u00b7 tiltmax '+(MAX_TILT*180/Math.PI).toFixed(0):'')+(TILT_EXP!==1?' \u00b7 tilt '+TILT_EXP:'')+(GLYPHS!=='flat'?' \u00b7 glyphs '+GLYPHS:'')
+  +(BUILD_OK?'':' \u00b7 BUILD MISMATCH')+(INK_F!==1?' \u00b7 ink '+INK_F:'')+(FLOOR_DEG!==1.25?' \u00b7 floor '+FLOOR_DEG:'')+(Math.abs(MAX_TILT-15*Math.PI/180)>1e-9?' \u00b7 tiltmax '+(MAX_TILT*180/Math.PI).toFixed(0):'')+(TILT_EXP!==1?' \u00b7 tilt '+TILT_EXP:'')+(GLYPHS!=='point'?' \u00b7 glyphs '+GLYPHS:'')
   +(BOW_F!==0?' \u00b7 bow '+BOW_F:'');
 document.getElementById('reset').onclick=function(){var L=lockedHooks();
   for(var i=0;i<P.nh;i++) if(!L.has(i)) cur[i]=null;
