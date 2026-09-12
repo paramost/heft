@@ -320,8 +320,8 @@ def main():
         bad = [i + 1 for i, b in enumerate(P)
                if not balanced(b["tree"], [b["vals"][x] for x in b["sol"]])]
         print("boards            :", len(P))
-        print("forks             :", dict(sorted(f.items())), "  (expect {0: 87, 1: 56, 2: 1})")
-        print("distinct topologies:", t, "  (expect 32)")
+        print("forks             :", dict(sorted(f.items())), "  (expect {0: 29, 1: 101, 2: 14})")
+        print("distinct topologies:", t, "  (expect 37)")
         print("unbalanced boards :", bad, "  (expect [])")
         return
 

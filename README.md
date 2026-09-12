@@ -3,7 +3,7 @@
 A daily puzzle. A hanging mobile with empty hooks and a rack of weights — fill every hook so the
 whole thing hangs level. You never learn what anything weighs.
 
-**Live:** [heftdaily.com](https://heftdaily.com) · **Build:** 1.5.12 · **v1.5 baseline** · **Boards:** 144
+**Live:** [heftdaily.com](https://heftdaily.com) · **Build:** 1.6.6 · **five weights** · **Boards:** 144, all six hooks
 
 ## How it works
 
@@ -15,15 +15,21 @@ correctness.
 
 Placing a weight is free. Replacing one costs a rehang. Zero is perfect.
 
-The weights are ordered and the rack is sorted to match: **star, diamond, triangle, pentagon**,
-lightest to heaviest, on every board. Nothing states this — the glyphs share one height and their
-ink areas climb, so it reads as apparent weight. You still have to hang something to learn the
-ratios, which are the puzzle.
+The weights are ordered and the rack is sorted to match: **diamond, triangle, hexagon, pentagon,
+house**, lightest to heaviest, on every board. Nothing states this — the glyphs share one height
+and their ink areas climb, so it reads as apparent weight. You still have to hang something to
+learn the ratios, which are the puzzle.
+
+Five weights on six hooks is the **heavy** rung, shipped alone for feedback. The four-weight
+bank it replaced (1.5.12, 96 boards at five hooks and 48 at six) is the easy rung and comes
+back beside it when the daily is built.
 
 ## Repo
 
 - `index.html` — the game. ~33 KB of code, no build step. Vercel serves it as-is.
 - `boards.js` — the 144-board bank, one board per line, loaded before the game script.
+- `tools/select.py` — picks a bank from a generator pool, applying the clearance and crossing
+  checks the generator does not.
 - `docs/` — decision record, project plan, generation spec, publishing notes.
 
 - `vercel.json` — one header rule: `Cache-Control: public, max-age=0, must-revalidate` on every

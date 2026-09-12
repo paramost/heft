@@ -9,7 +9,7 @@ Implemented as **`tools/generate.py`** — Python 3, standard library only, no d
     python3 tools/generate.py --hooks 6 7 --k 4 5 \
         --samples 5000 --out pool.jsonl                    # with the enumeration columns
 
-`--verify` recomputes every property over the shipped bank and prints forks 87/56/1 and 32
+`--verify` recomputes every property over the shipped bank and prints forks 29/101/14 and 37
 topologies. Run it first: it checks the measuring code against answers already known.
 
 **Earlier docs claimed generation lived in a separate private repo. It never did.** The code that
