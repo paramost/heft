@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en" data-build="1.6.2">
+<html lang="en" data-build="1.6.3">
 <head>
 <meta charset="utf-8">
-<!-- Heft build 1.6.2 -->
+<!-- Heft build 1.6.3 -->
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Heft</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23161d4a'/%3E%3Cpath d='M8 7H13.5V13.25H18.5V7H24V25H18.5V17.75H13.5V25H8Z' fill='%23dfe6ff'/%3E%3C/svg%3E">
@@ -69,7 +69,7 @@
 
 <script src="boards.js"></script>
 <script>
-const BUILD='1.6.2';
+const BUILD='1.6.3';
 /* the build string sits in three places so it can be read without running the page: here,
    an html attribute, and a comment in the head. Three copies can disagree, so they are
    checked against each other - a number that lies is worse than one that is hard to read. */
@@ -170,7 +170,9 @@ let day=BOARD0, P, stocks, rackOrder, cur, touches, tilt, glow, depth=[], select
    The ink is measured with canvas measureText's actualBoundingBox*, which is the glyph's own
    outline. getBBox() on an SVG <text> was used until 1.6.2 and it returns the FONT's box -
    25.8px tall for a 19.4px face whose capitals are 14px - so the risers stopped 5px short of
-   the letters for the whole of 1.4-1.6.1. A glyph sized from its box, again. */
+   the letters for the whole of 1.4-1.6.1. A glyph sized from its box, again.
+   Each riser stops where the ink starts on ITS OWN column (1.6.3): the H's cord comes down
+   between the stems and meets the crossbar, where 1.6.2 left it hanging in the gap. */
 (function(){
  const m=document.getElementById('mark'), hdr=document.querySelector('header');
  const F=22, S=F/19.4;                              // 1.6.2: up from 19.4, geometry scaled with it
@@ -186,6 +188,21 @@ let day=BOARD0, P, stocks, rackOrder, cur, touches, tilt, glow, depth=[], select
              left:t.actualBoundingBoxLeft, right:t.actualBoundingBoxRight};
    }catch(e){ return {up:F*0.72, down:0, left:F*0.36, right:F*0.36}; }   // Archivo Black's ratios
  }
+ function inkAtCentre(ch,up){
+   // How far above the baseline the ink starts ON THE CORD'S OWN COLUMN. For E, F and T that
+   // is the cap top; for the H the cord comes down between the stems and meets the crossbar.
+   // Measured by drawing the letter and scanning the centre column - the thing itself.
+   try{
+     const k=4, cv=document.createElement('canvas'), c=cv.getContext('2d');
+     cv.width=Math.ceil(F*k*2); cv.height=Math.ceil(F*k*2);
+     c.font=(F*k)+'px "Archivo Black"'; c.textAlign='center'; c.fillStyle='#fff';
+     const cx=cv.width/2, by=Math.round(F*k*1.2);
+     c.fillText(ch,cx,by);
+     const col=c.getImageData(Math.round(cx),0,1,cv.height).data;
+     for(let y=0;y<cv.height;y++) if(col[y*4+3]>8) return (by-y)/k;
+     throw 0;
+   }catch(e){ return up; }
+ }
  function lay(){
    const H=hdr.getBoundingClientRect().height;
    if(!(H>0)) return;
@@ -195,11 +212,12 @@ let day=BOARD0, P, stocks, rackOrder, cur, touches, tilt, glow, depth=[], select
    const down=Math.max.apply(null,I.map(function(i){return i.down;}));
    const top=mid-(up+down)/2, base=top+up;          // ink centred: top gap equals bottom gap
    const dx=top-(LX[0]-I[0].left);                  // ...and the H's left gap is set to match them
+   const meet='HEFT'.split('').map(function(ch,k){return base-inkAtCentre(ch,I[k].up);});
    m.setAttribute('viewBox','0 0 '+W+' '+H.toFixed(2));
    m.setAttribute('width',W); m.setAttribute('height',H.toFixed(2));
    m.innerHTML='<g class="risers" stroke="'+WIRE_B+'" fill="none" stroke-linecap="round" '
      +'stroke-width="'+sw(1.1)+'" stroke-opacity=".55">'
-     +LX.map(function(x){return '<path d="M'+(x+dx).toFixed(2)+' 0V'+(top+1.5).toFixed(2)+'"/>';}).join('')+'</g>'
+     +LX.map(function(x,k){return '<path d="M'+(x+dx).toFixed(2)+' 0V'+(meet[k]+1.5).toFixed(2)+'"/>';}).join('')+'</g>'
      +'<g class="ltrs">'+LX.map(function(x,k){return '<text class="ltr" x="'+(x+dx).toFixed(2)+'" y="'+base.toFixed(2)
        +'" text-anchor="middle" font-family="Archivo Black,serif" '
        +'font-size="'+F+'" fill="'+INK+'">'+'HEFT'[k]+'</text>';}).join('')+'</g>';
