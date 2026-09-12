@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en" data-build="1.5.12">
+<html lang="en" data-build="1.6.0">
 <head>
 <meta charset="utf-8">
-<!-- Heft build 1.5.12 -->
+<!-- Heft build 1.6.0 -->
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Heft</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23161d4a'/%3E%3Cpath d='M8 7H13.5V13.25H18.5V7H24V25H18.5V17.75H13.5V25H8Z' fill='%23dfe6ff'/%3E%3C/svg%3E">
@@ -69,7 +69,7 @@
 
 <script src="boards.js"></script>
 <script>
-const BUILD='1.5.12';
+const BUILD='1.6.0';
 /* the build string sits in three places so it can be read without running the page: here,
    an html attribute, and a comment in the head. Three copies can disagree, so they are
    checked against each other - a number that lies is worse than one that is hard to read. */
@@ -78,36 +78,36 @@ const BUILD_OK=(function(){ let c=null;
     if(n.nodeType===8){ const x=/Heft build (\S+)/.exec(n.nodeValue||''); if(x) c=x[1]; } });
   return document.documentElement.getAttribute('data-build')===BUILD && c===BUILD; })();
 const WIRE='#4d59a6', REST='#c98f4a', LIT='#7ef0ff', INK='#dfe6ff';
-/* Four glyphs of EQUAL BOUNDING HEIGHT (29 units), each centred on its bounding box as v1 did.
-   Equal AREA was tried in 1.5.7 and reverted: it left heights 27% apart, which reads worse than
-   the area difference it removed. Height and area cannot both be equalised across different
-   shapes; height is the one the eye checks in a rack.
-   Order is star, diamond, triangle, pentagon - lightest to heaviest. That is the AREA order
-   (392 < 420 < 462 < 609), not the compactness order, which puts the triangle second. They
-   disagree about the middle pair and 1.5.9 resolved it the other way, narrowing the triangle to
-   force compactness to win. Play said the diamond reads lighter, so area is the stronger cue and
-   the trim was pushing against it; it is reverted. The star keeps its 0.52 inner/outer ratio
-   rather than 0.50, because thin points read lighter than their ink. The pentagon is deliberately
-   NOT trimmed: at a fixed height, reducing a pentagon's area also reduces its compactness, and it
-   must lead both. That is geometry, not an oversight.
+/* Five glyphs, one per weight, on a shared 29-unit ink height with the ink top at 9.5 (the
+   triangle at 10.23 - see below). Height is what the eye checks in a rack; equal AREA was tried
+   in 1.5.7 and reverted because height and area cannot both be equalised across shapes.
+   Order is diamond, triangle, hexagon, pentagon, house - lightest to heaviest. That is the ink
+   AREA order (420 < 438 < 546 < 609 < 652), which is the cue play has agreed with where
+   compactness did not. Every polygon is regular - equal sides AND equal angles - by Dan's call
+   on the 1.6.0 rack: a hexagon with equal sides but uneven corners looked wrong at 44px.
+   - The triangle is equilateral at its shipped width, 31.8, so 27.5 tall: 0.75 off top and
+     bottom, and its ink top is 10.23. The cord meets it there via CELL_TOP.
+   - The hexagon is regular, so 25.1 wide at 29 tall - the narrowest in the rack by four units.
+     It cannot be regular, 29 tall and 30 wide; only two of those.
+   - The house (roof from 9.5 to 24, walls to 38.5) is the only shape with vertical edges. Same
+     ink as a 30-wide hexagon would have, with a silhouette nothing else in the set shares.
+   - The star is gone with the light end it occupied: it was the shape carrying the
+     differentiation against the triangle, and this set differentiates by side count instead.
    Nothing here states an ordering. What is left is apparent weight, and it is the hint: nothing
    on screen says which is heavier, the player forms a hypothesis and must hang something to find
    out. Do not strengthen the cue - exaggerated it becomes the label this avoids. */
 const CELLS={
- pent:'M24.0 9.5L39.2 20.6L33.4 38.5L14.6 38.5L8.8 20.6z',
- star:'M24.0 9.5L28.9 18.8L39.2 20.6L31.9 28.1L33.4 38.5L24.0 33.9L14.6 38.5L16.1 28.1L8.8 20.6L19.1 18.8z',
- prism:'M24.0 9.5L39.9 38.5L8.1 38.5z',
  diamond:'M24.0 9.5L38.5 24.0L24.0 38.5L9.5 24.0z',
+ prism:'M24.00 10.23L39.90 37.77L8.10 37.77z',
+ hex:'M24.00 9.50L36.56 16.75L36.56 31.25L24.00 38.50L11.44 31.25L11.44 16.75z',
+ pent:'M24.0 9.5L39.2 20.6L33.4 38.5L14.6 38.5L8.8 20.6z',
+ house:'M24.0 9.5L39.0 24.0L39.0 38.5L9.0 38.5L9.0 24.0z',
 };
 const KEYS=Object.keys(CELLS);
-const ORDERED=['star','diamond','prism','pent'];   // lightest to heaviest, by apparent weight
-// No weight is a circle any more: the ring was dropped in 1.5.2 because an empty socket is a
-// circle too, and that ambiguity was a known untested risk. The star is a five-pointer at 30.4
-// units of ink, in line with the other three, replacing an eight-pointed burst at 35.8.
-// 'crescent' was in this set and drew nothing: its two arcs coincided, so it enclosed zero
-// area. It never reached a screen before 1.5.0 - the old shape formula always collided and fell
-// back to the first four keys - so the bank's shape variety was illusory. Removed, not repaired.
-const CELL_TOP={pent:9.5, star:9.5, prism:9.5, diamond:9.5};
+const ORDERED=['diamond','prism','hex','pent','house'];   // lightest to heaviest, by apparent weight
+// No weight is a circle: the ring was dropped in 1.5.2 because an empty socket is a circle too.
+// Every shape is pointy-topped so it hangs from the cord rather than resting on it.
+const CELL_TOP={diamond:9.5, prism:10.23, hex:9.5, pent:9.5, house:9.5};
 const U=22, DROP=56, HOOKDROP=30, BOW=4, R=21, S=44;
 /* The tilt range. 15 was the shipped value; 30 was measured and rejected as a staircase.
    Widening is the only lever that reduces invisible single-weight swaps (40.6% at 15 deg,
