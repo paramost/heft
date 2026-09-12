@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en" data-build="1.6.6">
+<html lang="en" data-build="1.7.0">
 <head>
 <meta charset="utf-8">
-<!-- Heft build 1.6.6 -->
+<!-- Heft build 1.7.0 -->
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Heft</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23161d4a'/%3E%3Cpath d='M8 7H13.5V13.25H18.5V7H24V25H18.5V17.75H13.5V25H8Z' fill='%23dfe6ff'/%3E%3C/svg%3E">
@@ -69,7 +69,7 @@
 
 <script src="boards.js"></script>
 <script>
-const BUILD='1.6.6';
+const BUILD='1.7.0';
 /* the build string sits in three places so it can be read without running the page: here,
    an html attribute, and a comment in the head. Three copies can disagree, so they are
    checked against each other - a number that lies is worse than one that is hard to read. */
@@ -182,7 +182,7 @@ const BOARD0=(function(){ const m=/[?&]board=(\d+)/.exec(location.search);
   const v=m?parseInt(m[1],10):0;
   return (v>=1&&v<=PUZZLES.length) ? v-1 : randomBoard(-1); })();
 
-let day=BOARD0, P, stocks, rackOrder, cur, touches, tilt, glow, depth=[], selected=null, ceilG=0;
+let day=BOARD0, P, stocks, rackOrder, cur, touches, attempts, tilt, glow, depth=[], selected=null, ceilG=0;
 
 
 /* wordmark: four letters hanging from the top edge of the header, which is the top of the
@@ -273,7 +273,8 @@ function mix(a,b,t){ const p=function(h){return [1,3,5].map(function(i){return p
 
 function load(){
   P=PUZZLES[day]; P._arms=armList(P.tree,[]);
-  cur=new Array(P.nh).fill(null); touches=new Array(P.nh).fill(0); hitPts=[];
+  cur=new Array(P.nh).fill(null); touches=new Array(P.nh).fill(0); attempts=[]; hitPts=[];
+  ARM_ORDER=armOrder();
   tilt=P._arms.map(function(){return {cur:0,ph:Math.random()*6.28};});
   glow=P._arms.map(function(){return 0;}); ceilG=0;
   depth=[]; (function mk(n,dd){ if(n.t!=='a') return; depth[n._i]=dd; mk(n.l,dd+1); mk(n.r,dd+1); })(P.tree,0);
@@ -517,34 +518,56 @@ function tapHook(i){
   if(lockedHooks().has(i)) return;
   if(cur[i]!=null){ cur[i]=null; selected=null; }
   else if(selected!=null&&used(selected)<P.cap){ cur[i]=selected; touches[i]++; selected=null; }
+  if(cur.every(function(x){return x!=null;})) reading();
   syncRack(); message();
 }
-function rehangs(){ return touches.reduce(function(s,n){return s+Math.max(0,n-1);},0); }
+/* THE SCORE IS ATTEMPTS (1.7.0). An attempt is a full board: fill every hook and the mobile
+   gives a reading, level or not. Each reading is recorded as one mark per arm - level, tipped
+   right, tipped left - in screen order, and the score is how many readings it took. Rehangs,
+   the score until 1.6.6, charged by the hook, so a wrong pair on a leaf arm cost two and a
+   rebuilt branch cost four for what was in each case one wrong reading; the record's own data
+   showed it - scores clustered at zero, four and six. An attempt charges for the reading.
+   Filling the same arrangement twice is one reading, not two. Nothing here consults the
+   solution: a mark says what the arm did, which the player already saw. */
+let ARM_ORDER=[];
+function armOrder(){                              // arms left to right as they sit on screen
+  const xs={};
+  (function walk(n,px){ if(n.t!=='a') return; xs[n._i]=px; walk(n.l,px-n.ld*U); walk(n.r,px+n.rd*U); })(P.tree,0);
+  return P._arms.slice().sort(function(a,b){ return xs[a._i]-xs[b._i] || depth[a._i]-depth[b._i]; });
+}
+function reading(){
+  const key=cur.join(',');
+  if(attempts.length && attempts[attempts.length-1].key===key) return;   // the same board again
+  const marks=ARM_ORDER.map(function(n){ const t=torques(n), l=t[0], r=t[1];
+    return (r===l) ? 0 : (r>l ? 1 : -1); });                              // 1: right end down
+  attempts.push({key:key, marks:marks});
+}
 function solved(){ return cur.every(function(x){return x!=null;}) && P._arms.every(balanced); }
 const MON=['Jan','Feb','Mar','Apr','May','June','July','Aug','Sept','Oct','Nov','Dec'];
 function stamp(){ const t=new Date(); return 'No '+(day+1)+' • '+MON[t.getMonth()]+' '+t.getDate(); }
-function scoreLine(){ const c=rehangs(); return c+' Rehang'+(c===1?'':'s'); }
-function resultText(){ return '\u2696\ufe0f H E F T \u2696\ufe0f\n'+stamp()+'\n'+grid()+'\n'+scoreLine(); }
-function grid(){ return touches.map(function(n){const c=Math.max(0,n-1);
-  return c===0?'🟢':c===1?'🟡':c===2?'🟠':'🔴';}).join(''); }
+function scoreLine(){ return 'Level in '+attempts.length; }
+// one row per reading: a flat stroke for a level arm, an arrow for the way it tipped
+const MARK={'0':'\u2796', '1':'\u2198\ufe0f', '-1':'\u2199\ufe0f'};
+function rows(){ return attempts.map(function(a){ return a.marks.map(function(m){return MARK[String(m)];}).join(''); }); }
+function resultText(){ return '\u2696\ufe0f H E F T \u2696\ufe0f\n'+stamp()+'\n'+rows().join('\n')+'\n'+scoreLine(); }
 function message(){
-  const done=solved(), c=rehangs();
+  const done=solved(), c=attempts.length;
   // the same stamp and separator the shared result uses, so the header and the clipboard agree
-  const cn = c>0 ? '<span style="color:var(--rest)">'+c+'</span>' : c;
+  const going = done ? c : c+1;                 // the attempt in progress, until it is level
+  const cn = c>0 ? '<span style="color:var(--rest)">'+going+'</span>' : going;
   document.getElementById('meta').innerHTML=stamp()
     +'<br>'+P.nh+' hooks \u2022 '+P.k+' weights'
-    +'<br>'+cn+' rehang'+(c===1?'':'s');
+    +'<br>'+(done ? 'level in '+cn : 'attempt '+cn);
   promptEl.classList.toggle('win',done);
   if(!done){                                   // taking a weight back off retires the result
     const cb=document.getElementById('copy');
     cb.style.display='none'; cb.classList.remove('go'); cb.textContent='Copy result';
   }
   if(done){
-    promptEl.textContent = c===0?'Level, and not one rehang.':'Level, with '+c+'.';
     promptEl.innerHTML=
       '<div class="stitle">\u2696\ufe0f H E F T \u2696\ufe0f</div>'+
       '<div class="sline">'+stamp()+'</div>'+
-      '<div class="sgrid">'+grid()+'</div>'+
+      '<div class="sgrid">'+rows().join('<br>')+'</div>'+
       '<div class="sline">'+scoreLine()+'</div>';
     document.getElementById('copy').style.display='';
     document.getElementById('copy').classList.add('go');
