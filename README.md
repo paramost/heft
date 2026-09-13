@@ -3,7 +3,7 @@
 A daily puzzle. A hanging mobile with empty hooks and a rack of weights — fill every hook so the
 whole thing hangs level. You never learn what anything weighs.
 
-**Live:** [heftdaily.com](https://heftdaily.com) · **Build:** 1.6.6 · **five weights** · **Boards:** 144, all six hooks
+**Live:** [heftdaily.com](https://heftdaily.com) · **Build:** 1.6.7 · **five weights** · **Boards:** 144, all six hooks
 
 ## How it works
 
@@ -13,7 +13,7 @@ the board comes level. An arm can be level with the wrong weights on it, but the
 total mass, so the arm above must lean. Nothing in the interface locks, hints, or indicates
 correctness.
 
-Placing a weight is free. Replacing one costs a rehang. Zero is perfect.
+Placing a weight is free. Replacing one costs a swap. Zero is perfect.
 
 The weights are ordered and the rack is sorted to match: **diamond, triangle, hexagon, pentagon,
 house**, lightest to heaviest, on every board. Nothing states this — the glyphs share one height
