@@ -1,38 +1,33 @@
 # Heft — project plan (v2)
 
-**Where things stand:** **v1.5 baseline, build 1.5.12** — a deliberate stopping point, and the
-starting point for persistence. Build 1.5.2, deployed from GitHub via Vercel to `heftdaily.com`. 144
-boards, selected at random. Proportional tilt, 2.5% bow, 44px weights, adaptive vertical frame. No
-persistence and no daily ordering — both were built during v1 and deliberately reverted as
-premature.
+**Where things stand:** **build 1.6.12**, live at heftdaily.com from GitHub via Vercel. Five
+weights on six hooks — the heavy rung, shipped alone for feedback; the four-weight bank returns
+beside it when the daily is built. 144 boards chosen for forks with lopsided ones capped at a
+third, every one clear in every reachable state. Swaps, counted in the sockets. A share sheet.
+The wordmark, the arm glow and the header were all found wrong on a phone and fixed against
+measurements. See the decision record's *Settled in the 1.6 session*.
 
-The 1.4.x builds were structural and visual, not mechanical: the board bank moved to `boards.js`,
-the mobile now hangs from a rule under the header, the wordmark hangs from the top of the header,
-the header was compacted, and the rule lights on solve. `?ink=N` was added as a fourth testing
-parameter. 1.5.0 is the exception that did touch the puzzle: shapes and rack positions are now
-shuffled per board, closing a leak that gave away the full ranking of the four weights.
+Phase 1 is done in the sense that matters: the generator exists, applies the clearance rule it
+was missing, and its pools are honest. What it found reshaped the phases below — seven hooks is
+closed at this geometry, and the fork axis lives at six hooks.
 
 Ordered by what unblocks what, not by effort. **Nothing here is approved. Each item needs to be
 explained and agreed before any work — including measurement — begins.**
 
 ---
 
-## Phase 1 — deepen the bank
+## Phase 1 — deepen the bank · **done, with findings**
 
-This comes first now, because it changes what every later decision is choosing between.
+`tools/generate.py` makes pools; `tools/clearance.py` keeps only boards that draw cleanly in
+every reachable state; `tools/select.py` picks a bank by score — forks and a forked root count,
+each board from a shape discounts the next, lopsided boards capped. Run `--verify` first.
 
-**Generate a lot more boards.** The five-hook pool has 6,772 qualifying boards already enumerated
-and only 96 are shipped. Six-hook is sampled across 18 of 42 skeletons. This is background compute
-in `tools/generate.py`, not design work, and it is the prerequisite for both the difficulty curve
-and any tightening of the generation constraints.
-
-**Decide whether the leaf-arm imbalance floor goes in.** Measured in v1: applying the 20% floor to
-arms whose children are both hooks costs 82% of the shipped bank but still leaves roughly 1,200
-five-hook boards in the pool, so at five hooks it is close to free. Six-hook cost is unknown without
-a run. It closes the case where a wrong pair sits a pixel off level — and only that case; the same
-trap one level up cannot be closed at any price. See the decision record.
-
----
+What the pools said, all in the decision record: forks are geometrically scarce, not
+under-sampled; a lone hook at the root is the same thing as an unforked root and 28 of 42
+six-hook shapes have one; seven hooks with a forked root yields 9 boards in 1,213 at this
+geometry; the leaf floor is unaffordable at five values. The deep columns (`invisible_swaps`,
+`sub_floor`, `confusable`) have still never been computed over a real pool — about 46,000
+states a board at six hooks and five weights — and would inform the next bank.
 
 ## Phase 2 — the daily · **next**
 
@@ -54,6 +49,15 @@ stay as a testing pin.
 **Fix the result stamp.** `No <n>` is currently a board index and means nothing to a reader. It
 should be the day number.
 
+**Decisions to take before building** (raised 13 Sept 2026, not yet taken): the epoch — which
+date is No 1; whether the streak goes on the card as a fifth line or stays in the header; and
+that a missed day ends the streak. Stage on a branch preview first: a persistence bug erases
+someone's streak.
+
+**The light rung.** The four-weight bank (1.5.12's 144, drawn with the first four of the new
+glyphs) comes back as a second board per day — Light beside Heavy — rather than a toggle, so
+the day's board is never ambiguous. Both banks in one `boards.js`.
+
 ---
 
 ## Phase 3 — knowing whether it works
@@ -61,7 +65,7 @@ should be the day number.
 The current feedback loop captures finishers and nothing else. The most valuable number is how many
 open the link and never finish a board, and it cannot be reconstructed after the fact.
 
-**Anonymous event logging.** Board opened, first weight hung, each rehang, solved or abandoned.
+**Anonymous event logging.** Board opened, first weight hung, each swap, solved or abandoned.
 A Vercel serverless function writing to a simple store. Worth building before sharing widely.
 
 **Four questions worth asking testers**, each tied to something genuinely unknown: did you work out
@@ -88,8 +92,9 @@ passes the guiding rule in the decision record. Listed so it is not "fixed" with
 six-hook skeletons rather than 4. But a five-weight rack is a wider search and a different
 difficulty, so it wants its own rung rather than being mixed in blind.
 
-**Seven hooks.** Reachable only at five or six weights, about 1 board per 11,000 draws. Expensive
-and probably not worth it before the simpler variety is exhausted.
+**Seven hooks.** Closed at this geometry: with a forked root, 9 usable boards in 1,213; 825 fail
+at level. Reopening it means longer levers (`--lever-max 7`, measurable, costs scale) or a
+smaller weight box. Neither tried.
 
 **Difficulty curve — now without a signal.** The original plan was to build it from rehang
 counts once persistence existed. Rehangs have since been rejected as a difficulty measure: they
@@ -164,7 +169,12 @@ which they saw first, not which is better.
 
 - `index.html` — the game
 - `boards.js` — the 144-board bank, one board per line
+- `icon-1.png` — the apple-touch-icon a link preview shows; drawn by `tools/icon.py`
 - `tools/generate.py` — the board generator. Python 3, standard library only
+- `tools/clearance.py` — hooks apart, nothing crossing, in every reachable state
+- `tools/select.py` — picks a bank from a pool by score
+- `tools/geometry.py` — the drawing constants the three share
+- `tools/icon.py` — renders the icon
 - `docs/heft-handoff.md` — start here: how to work on this, and nothing that can go stale
 - `docs/heft-decisions.md` — why the mechanics are the way they are
 - `docs/heft-generation.md` — the generation spec the generator was written against
@@ -173,12 +183,12 @@ which they saw first, not which is better.
 
 ---
 
-## Still true, and now with a second file
+## Still true, and now with a third file
 
 The bank split means a cached `boards.js` against a fresh `index.html` renders a header, an empty
 stage and the default prompt — a working-looking game with no mobile in it, and nothing on screen
 saying why. An on-screen guard when `PUZZLES` is missing is about three lines and has not been
-built.
+built. The third file, `icon-1.png`, can go stale harmlessly; a stale bank cannot.
 
 ---
 

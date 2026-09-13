@@ -1,6 +1,7 @@
 # Heft — board generation spec (v2)
 
-Written against build 1.5.12. This replaces the ad-hoc constraint list the v1 generator was given.
+Written against build 1.5.12; corrected against 1.6.12 where the pools proved it wrong (marked).
+This replaces the ad-hoc constraint list the v1 generator was given.
 Implemented as **`tools/generate.py`** — Python 3, standard library only, no dependencies.
 
     python3 tools/generate.py --verify                     # check property code against boards.js
@@ -64,6 +65,11 @@ depth 3–5, values 1–315.
 5. **No 1:1 arms.** Settled in v1: a 1:1 arm balances with any matching pair — 3.29 ways against
    1.22 elsewhere — so a player balances it correctly, gets no response, and concludes they are
    wrong. Reject the arm outright, not just the case where both children are equal hooks.
+6. **It draws cleanly in every reachable state** *(added 1.6.12 — this list omitted the record's
+   "sibling subtrees must clear each other entirely", and a pool without it was 78% unusable)*.
+   Hooks no closer than 37.3 units, the shipped bank's worst; no arm, riser or cord crossing
+   another it does not meet at a joint; no line inside the 44-unit box of a weight it does not
+   hold. `tools/clearance.py`, applied in the generator; `--no-clearance` defers it to selection.
 
 ## Properties to record — columns, not gates
 
@@ -125,12 +131,11 @@ Worse, the branchy shapes are the rare ones. `((hh)((hh)(hh)))` and `(((hh)h)((h
 
 **Requirements:**
 
-1. **Cap repeats per topology.** No shape should account for more than ~2–3 boards in a 144-board
-   bank. With 132 topologies available at 7 hooks this stops being a constraint and starts being
-   free.
-2. **Select across topologies before selecting within them.** Fill the shape slots first, then
-   choose the best board for each slot on the other columns. Selecting on quality first will
-   re-concentrate on whatever shape happens to score well.
+1. **Discount repeats per topology** *(was: cap at 2–3; 1.6.12)*. Each board already taken from a
+   shape discounts the next one's score, so a strong shape can contribute ten and a weak one
+   none. A hard cap plus round-robin made the 1.6.0 bank 69% lopsided.
+2. **Score, then pick** *(was: topologies first)*. Forks and a forked root score; lopsided boards
+   are capped at a share of the bank rather than banned, since banning keeps 14 shapes.
 3. **Record the topology string** (`(h(h(hh)))` form, levers omitted) as a column so repeats are
    countable rather than eyeballed.
 
@@ -141,9 +146,12 @@ chain hands the player a forced sequence: the deepest arm has two leaves and sol
 every arm above it has exactly one unknown. You never hold two open questions at once. 60% of the
 bank is the easiest structure available and there is effectively no hard end.
 
-Wanted: a real spread, with enough two-fork and three-fork boards to build a top. At 7 hooks a
-three-fork board is possible; at 6 it is the rare `((hh)((hh)(hh)))` shape. Whether they exist in
-quantity is the first thing the pool will tell us.
+Wanted: a real spread, with enough two-fork boards to build a top. *(Corrected 1.6.12: three
+forks needs **eight** hooks — max forks by hook count is 5→1, 6→2, 7→2, 8→3 — and seven hooks
+with a forked root yields 9 usable boards in 1,213 at this geometry. The pools also showed the
+scarcity is geometric, not a sampling accident: cleared six-hook pools have two-fork boards at
+0.6%, the shipped bank at 0.7%. And "select across topologies before within them" turned 28
+lopsided shapes into 69% of a bank; the picker is now scored, with lopsided boards capped.)*
 
 **A caution on judging this.** Difficulty reports from someone who has played the game for months
 are not calibrated to a new player. "Still too easy" from that source is an argument for making a

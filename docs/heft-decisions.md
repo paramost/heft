@@ -1,4 +1,4 @@
-# Heft — decision record (v1.5 baseline, build 1.5.12)
+# Heft — decision record (v1.6, build 1.6.12)
 
 A daily puzzle. A hanging mobile with empty hooks and a rack of weights. You never learn what
 anything weighs. Fill every hook so the whole thing hangs level. Placing is free; replacing costs
@@ -217,6 +217,88 @@ let arms cross straight through one another.
 
 ---
 
+## Settled in the 1.6 session (five weights) — do not re-litigate
+
+**The live game is the heavy rung: five weights on six hooks, shipped alone for feedback.**
+Dan's framing: the four-weight game was easy mode, and a daily needs depth. 1.6.6 replaced the
+bank rather than adding a selector, because a selector built before the daily would have to be
+rebuilt around it. The four-weight bank comes back beside it as the light rung when the daily is
+built — two named boards a day, not a toggle, so "today's board" stays unambiguous.
+
+**Five glyphs, all regular polygons: diamond, triangle, hexagon, pentagon, house.** Lightest to
+heaviest by ink area — 420, 438, 546, 609, 652 — on a shared 29-unit height with the cord meeting
+the ink via a per-shape `CELL_TOP`. Every polygon has equal sides *and* equal angles: a hexagon
+with equal sides and uneven corners looked wrong at 44px, and "regular" was chosen over
+"square" once it was clear a hexagon cannot be regular, 29 tall and 30 wide — only two of those.
+Consequences the eye has to accept: the triangle is equilateral at its shipped width, so 27.5
+tall (ink top 10.23); the regular hexagon is 25.1 wide, the narrowest in the rack by four units,
+and reads tall next to shapes that are all wider than tall. That was looked at three times and
+kept. The house is the one shape that is not a regular polygon; it is the only one with vertical
+edges. The star is gone: it was the shape carrying the differentiation against the triangle, and
+this set differentiates by side count instead.
+
+**Flat tops were tried and play chose against them.** 1.6.1 turned the set over — flat tops,
+points down, the square in for the diamond — on the argument that the empty socket is a thin
+circle the cord meets at its edge, so a weight meeting the cord the same way was the consistent
+reading, not the odd one. Both sets shipped behind `?glyphs=` for the phone to compare, and the
+pointed set won. It stays the default; `?glyphs=flat` keeps the other. The argument was sound and
+the eye disagreed, which is the rule.
+
+**The score is swaps, counted in the sockets.** The count is what it was as "rehangs" since 1.4.7
+— hanging a weight where one already hung; zero is perfect — with two changes. The word: Dan
+could not live with "rehang". And the rule is now taught by the hook: every empty socket shows
+how many times something has hung there, which is what hanging there now will cost. A fresh
+board says 0 everywhere, a lifted weight leaves a 1 behind, and the card's circles at the end
+are a picture of those numbers. It passes the root rule — the socket says only what you did —
+and it makes the scoring explain itself without a word of instruction. Known and accepted:
+exchanging two hung weights costs two.
+
+**Scoring by attempts was built and set aside.** An attempt is a full board; the score is how
+many readings it took; the card is one row of arm marks per reading. It charges for the wrong
+idea rather than for how many hooks the idea touched — which rehangs get wrong, and the record's
+own numbers showed it: scores clustered at 0, 4 and 6, the shape of "rebuilt a branch". It lost
+on the card: rows of arrows need a legend, and Dan could not read them without one. The per-hook
+circles tell the story of the struggle and need no explanation. The branch `attempts` holds the
+work at 1.7.1 in case it is wanted.
+
+**The share is a share sheet, with the address as the last line of the text.** `navigator.share`
+where the phone has a sheet, the clipboard elsewhere and at the same moment, so a paste always
+works. Chrome on iOS was seen handing Messages only the page link when the share carried a `url`
+field; the address as the last line of the text — with its scheme, or Messages will not unfurl
+it — puts the card first and the preview beneath it. `icon-1.png` (180×180, drawn by
+`tools/icon.py`) is the apple-touch-icon that preview shows; iMessage caches a preview per URL,
+so a new design is a new filename. The title is HEFT, in caps.
+
+**The wordmark's risers reach the letters, and the H hangs from its crossbar.** From 1.4 to
+1.6.1 the risers stopped 5px short: the layout measured the letters with `getBBox()`, which on
+SVG text returns the *font's* box — 25.8px for a 19.4px face whose capitals are 14px. A glyph
+sized from its box, in the code written to avoid exactly that. The ink is now measured with
+canvas `measureText`'s `actualBoundingBox*`, and each riser stops where ink begins on its own
+column, found by drawing the letter and scanning down — which is what puts the H's cord on its
+crossbar rather than in the gap between its stems. The face is 22px, from 19.4.
+
+**The arms glow again.** The lit stroke on a level arm ran through the `#warm` blur, and a
+filter's region is sized from the bounding box of what it is applied to: a level arm is a
+horizontal line with no height, so the region was empty and the glow rendered as nothing — at
+exactly the moment the arm settled. Straight arms (1.5.5) took the light away; the bow had been
+giving the path its height. Nobody noticed for seven builds. The lit stroke now sits in a group
+with two invisible ticks at the arm's ends, so the group has height and the blur has a region —
+and it uses the weights' `#bloom`, so a solved mobile glows with one light. The vertical cord
+from the ceiling does not light — Dan's call; the ceiling and the arms are the level surfaces.
+
+**The header's gaps are measured from the ink, from the band's edge.** The H's left gap had been
+measured from the mark's origin, which sat 12px inside the band — invisible while the mark was
+drawn for a content column, plain once the header went edge to edge. The H is now 22.3 from
+top, bottom and edge; the meta's ink — cap top, last baseline, widest line — is 12 from top,
+bottom and edge, from 9.1px of header padding (its ink sits 2.9px inside the line box at both
+ends). The header is 60.6px, from 53.4. The lit rule's glow is clipped to the header's width:
+a blur bleeds sideways, which showed on an iPad and not on a phone.
+
+**The result block's four lines sit on one 22px pitch**, the emoji row 6px further from the date
+because emoji are taller than text.
+
+---
+
 ## Measured in the v1.2 session
 
 Everything here is measured over the shipped 144 boards, usually across every reachable state —
@@ -358,6 +440,54 @@ comes from colour and weight only.
 
 ---
 
+## Measured in the 1.6 session
+
+**The generator was missing a settled constraint, and the pool was 78% unusable.** The v2 spec's
+hard-constraint list dropped "sibling subtrees must clear each other entirely" and `generate.py`
+was written to the spec, so a six-hook pool of 6,889 boards had hooks drawn on top of each other
+and risers running through weights. The check is `tools/clearance.py`, now applied at generation:
+hooks no closer than the shipped bank's worst, and no line entering the 44-unit box of a weight
+it does not hold — the box, not the ink, because a line ends in a 4.5-unit pulley and board 16
+of the 1.6.0 bank had one sitting on a square. Over **every reachable state**, not at level and
+not at tilt corners: an arm is only at full tilt when one side of it is empty, so the corner
+search over-counts, and its role is only to find which pairs need the enumeration.
+
+**Two findings about the shipped 1.5.12 bank, from the same check.** The record's "closest hooks
+44 units at any tilt" was measured at level; over reachable states the worst is **37.3** (board
+51), and that is the threshold now. And **board 66** has a hairline arm-on-arm touch with
+weights on hooks 3 and 5 only — reachable, never reported.
+
+**Seven hooks with a forked root is closed at this geometry.** 1,213 root-forked seven-hook
+boards, 9 usable: 825 fail at level. Two subtrees with two hooks each under one root need more
+room than levers of 1–5 at 22 units give them once the 44-unit box takes its share. What would
+reopen it — longer levers (wider mobiles, smaller scale) or a smaller weight box — is
+measurable and not done.
+
+**Three forks needs eight hooks, not seven.** The spec said seven. Max forks by hook count: 5→1,
+6→2, 7→2, 8→3. Seven hooks buys twenty two-fork *shapes* against two at six; not a higher peak.
+
+**Forks were scarce for a geometric reason, not a sampling one.** The spec blamed the bank's one
+two-fork board on sampling and prescribed selecting across topologies. The cleared six-hook pool
+has two-fork boards at 0.6%; the shipped bank had them at 0.7%. Same rate.
+
+**A lone hook at the root is the same thing as "the root is a fork," and 28 of 42 six-hook shapes
+have one.** Filling shape slots evenly (the spec's rule) turned that into a bank 69% lopsided.
+Banning it keeps 14 shapes and draws ~17% smaller. The picker is now scored: forks and a forked
+root score, each board taken from a shape discounts the next, lopsided boards capped at a
+third. The 1.6.4 bank: 29 chains, 101 one-fork, 14 two-fork, 37 shapes, at most 10 per shape.
+
+**Five weights draw smaller.** Weights at the median board: 39px on the shipped bank, 35px on
+1.6.4. Honest clearance and forked shapes both cost width, and 141 of 144 boards were already
+width-limited. Judged on the phone and accepted.
+
+**The leaf floor is unaffordable at five values**, as the spec predicted for stacking: 25 leaf
+pairs instead of 16. Six percent of the pool passes it.
+
+**Backwards generation yields one board per ~30 draws at six hooks and ~360 at seven** — thirty
+times the record's 1 per 11,000 — before clearance. After clearance, one per ~650 at six hooks.
+
+---
+
 ## Measured in the v1.5 session
 
 **No board in the bank is fully honest, and none could be.** Zero of 144 have both no readings
@@ -479,9 +609,17 @@ leaves open whether the game needs a curve at all.
 
 ---
 
-## Current state — v1.5, the baseline for Phase 2
+## Current state — 1.6.12, the baseline for Phase 2
 
-**1.5.12 is a deliberate stopping point.** The game is polished visually and mechanically; what it
+**What is live, at heftdaily.com:** 144 six-hook five-weight boards, the pointed glyph set,
+swaps counted in the sockets, a share sheet with the address unfurling beneath the card, the
+wordmark and arm glow fixed, the header measured. Three files deploy: `index.html`, `boards.js`,
+`icon-1.png`. `tools/` holds the generator, the clearance check, the picker and the icon
+renderer, none of it served. The paragraphs below describe **1.5.12** and are kept as the
+history of how the drawing got here; where they disagree with the entries above, the entries
+above win.
+
+**1.5.12 was a deliberate stopping point.** The game is polished visually and mechanically; what it
 lacks is persistence, the daily, and any measurement of whether people finish a board. Those are
 Phase 2 and Phase 3. Nothing below is expected to change while that work happens, and a change to
 any of it should be a decision rather than a side effect.
@@ -587,6 +725,12 @@ because without it a refresh silently erases your rehangs and the day becomes re
 finished day should come back solved and frozen; and browsing boards must write nothing, or it
 becomes a way off the daily. See `heft-plan.md`.
 
+**Flat-topped weights.** Built, shipped behind a parameter, and beaten by the pointed set on a
+phone. See *Settled in the 1.6 session*.
+
+**Scoring by attempts, with a card of arm readings.** Built on the `attempts` branch (1.7.1), set
+aside because the card needed a legend. See *Settled in the 1.6 session*.
+
 **Hanging the mobile from the wordmark.** Routed around rather than solved — the rule under the
 header is the ceiling, and a line has no particular x, so nothing needs pinning or travelling.
 See *The header is the ceiling*. The measurement stands; the problem it measured is gone.
@@ -594,6 +738,18 @@ See *The header is the ceiling*. The measurement stands; the problem it measured
 ---
 
 ## Open questions
+
+**Does the socket counter teach the scoring, or clutter the board?** Six dim zeros on a fresh
+board is new ink on a screen the record kept quiet. Judged on one phone; a fresh player's phone
+is the test.
+
+**Do the 35px weights read?** The five-weight bank draws 10% smaller than the shipped one and
+nobody but the author has played it.
+
+**Is the colour scale right for five weights?** 🟢 0, 🟡 1, 🟠 2, 🔴 3+ per hook. With five values a
+hook can take four wrong tries, so red may saturate. Leave it until a week of shares says which
+way it fails; and when it is touched, fix the axis — green-to-red is the plan's flagged
+colour-vision problem, and a single-hue ladder is available.
 
 **Does the tilt read as progress or as fiddling?** Nobody has said in so many words whether they
 read the mobile or fiddle with it.

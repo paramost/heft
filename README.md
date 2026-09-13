@@ -28,8 +28,11 @@ back beside it when the daily is built.
 
 - `index.html` — the game. ~33 KB of code, no build step. Vercel serves it as-is.
 - `boards.js` — the 144-board bank, one board per line, loaded before the game script.
-- `tools/select.py` — picks a bank from a generator pool, applying the clearance and crossing
-  checks the generator does not.
+- `tools/clearance.py` — hooks apart and nothing crossing, in every reachable state. Applied by the
+  generator; `select.py` runs it on any pool that skipped it.
+- `tools/select.py` — picks a bank from a pool by score: forks count, repeats of a shape are
+  discounted, lopsided boards are capped.
+- `tools/icon.py` — draws `icon-1.png`, the icon a link preview shows.
 - `docs/` — decision record, project plan, generation spec, publishing notes.
 
 - `vercel.json` — one header rule: `Cache-Control: public, max-age=0, must-revalidate` on every
@@ -41,7 +44,9 @@ back beside it when the daily is built.
 Earlier docs said generation lived in a separate private repo. **It never did** — no such repo
 exists, and the code that produced the shipped 144 was not kept. `tools/generate.py` was written
 fresh against `docs/heft-generation.md`; run `python3 tools/generate.py --verify` to check its
-property code against `boards.js` before trusting it on new boards.
+property code against `boards.js` before trusting it on new boards. A 200k-draw run at six hooks
+and five weights takes about 35 minutes with the clearance check and keeps roughly one board in
+650 draws.
 
 The bank was split out of `index.html` in 1.4.0. It had been a single 42 KB line — 63% of the
 file — which made every one-line edit expensive and every diff unreadable. The game reads

@@ -11,6 +11,9 @@ Python 3 standard library only. No dependencies, no build step.
     python3 tools/generate.py --hooks 5 6 7 --k 4 5 --samples 200000 --out pool.jsonl
     python3 tools/generate.py --verify          # check the property code against the shipped bank
 
+Every kept board has passed tools/clearance.py: hooks apart, nothing crossing, in every
+reachable state. --no-clearance skips that (select.py runs it instead).
+
 The key idea: the balancing weights are DERIVED, not searched for. An arm with lever units ld:rd
 fixes the mass ratio of its two sides, so propagating from the root gives every hook's mass as a
 fraction. Clear denominators, divide by the gcd, and that is the only multiset of weights that
@@ -18,14 +21,13 @@ balances the tree, in lowest terms. Then we check whether it has exactly k disti
 the cap. Uniqueness is the only enumeration and it is small.
 """
 
-import argparse, json, math, random, sys, itertools
+import argparse, json, math, random, sys, itertools, os
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from clearance import clear
 from fractions import Fraction
 from collections import Counter
 
-U, DROP, HOOKDROP, R_GLYPH = 22.0, 56.0, 30.0, 21.0
-MAX_TILT = math.radians(15)
-FLOOR_DEG, JND_DEG = 1.25, 1.25
-STAGE_W, STAGE_H = 366.0, 405.0          # a 390x844 phone, 48svh stage
+from geometry import U, DROP, HOOKDROP, R_GLYPH, MAX_TILT, FLOOR_DEG, JND_DEG, STAGE_W, STAGE_H
 
 
 # ---------------------------------------------------------------- tree shapes
@@ -310,6 +312,8 @@ def main():
     ap.add_argument("--bank", default="boards.js")
     ap.add_argument("--root-fork", action="store_true",
                     help="only shapes whose root arm carries two arms - no lone hook at the top")
+    ap.add_argument("--no-clearance", action="store_true",
+                    help="skip the clearance and crossing checks (tools/clearance.py); select.py will run them")
     args = ap.parse_args()
 
     if args.verify:
@@ -332,7 +336,7 @@ def main():
                   for n, ss in shapes.items()}
         print("root-fork shapes:", {n: len(ss) for n, ss in shapes.items()})
     rnd = random.Random(args.seed)
-    kept, seen_sig = [], set()
+    kept, seen_sig, dropped = [], set(), Counter()
     for _ in range(args.samples):
         nh = rnd.choice(args.hooks)
         b = candidate(nh, rnd.choice(args.k), rnd.choice(args.cap),
@@ -345,6 +349,15 @@ def main():
         if sig in seen_sig:
             continue
         seen_sig.add(sig)
+        # Sibling subtrees must clear each other entirely - the decision record's rule, missing
+        # from the v2 spec until 1.6.12. Without it 78% of a six-hook pool drew with hooks on top
+        # of each other or lines through weights. Applied here so a pool is a pool of boards.
+        if not args.no_clearance:
+            why = clear(b["tree"], b["nh"], b["vals"], b["cap"])
+            if why:
+                dropped[why] += 1
+                continue
+            b["_ok"] = True
         b["cols"] = columns(b["tree"], b["nh"], b["vals"], b["cap"], b["sol"],
                             deep=not args.no_deep)
         kept.append(b)
@@ -354,6 +367,8 @@ def main():
             fh.write(json.dumps(b, separators=(",", ":")) + "\n")
 
     print("kept %d boards from %d samples -> %s" % (len(kept), args.samples, args.out))
+    if dropped:
+        print("  dropped by clearance:", dict(dropped))
     for key in ("nh", "k", "cap", "forks", "depth"):
         print("  %-7s %s" % (key, dict(sorted(Counter(b["cols"][key] for b in kept).items()))))
     print("  topologies %d distinct" % len(set(b["cols"]["topo"] for b in kept)))
