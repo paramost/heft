@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en" data-build="1.6.12">
+<html lang="en" data-build="1.7.2">
 <head>
 <meta charset="utf-8">
-<!-- Heft build 1.6.12 -->
+<!-- Heft build 1.7.2 -->
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>HEFT</title>
 <meta property="og:title" content="HEFT">
@@ -74,14 +74,13 @@
 <div class="rack" id="rack"></div>
 <footer>
   <button class="btn" id="reset">Clear</button>
-  <button class="btn" id="next">Another day</button>
   <button class="btn" id="copy" style="display:none">Copy result</button>
 </footer>
 <div class="build" id="build"></div>
 
 <script src="boards.js"></script>
 <script>
-const BUILD='1.6.12';
+const BUILD='1.7.2';
 /* the build string sits in three places so it can be read without running the page: here,
    an html attribute, and a comment in the head. Three copies can disagree, so they are
    checked against each other - a number that lies is worse than one that is hard to read. */
@@ -183,18 +182,30 @@ const WIRE_B=mix(WIRE,INK,0.28*INK_F);
 const WS=1+0.20*INK_F;                            // stroke width scale
 function sw(base){ return (base*WS).toFixed(2); }
 
-/* Boards are drawn at random for now; ordering waits for the daily. ?board=N pins one,
-   so a link can still point at a specific puzzle. */
-function randomBoard(not){
-  if(PUZZLES.length<2) return 0;
-  let n; do{ n=Math.floor(Math.random()*PUZZLES.length); }while(n===not);
-  return n;
-}
-const BOARD0=(function(){ const m=/[?&]board=(\d+)/.exec(location.search);
+/* The daily. The board comes from the date: days since the epoch, counted from the local
+   Y-M-D read as UTC so daylight saving cannot bend the count. No 1 is 15 Sept 2026. Past the
+   end of the bank the numbering keeps counting and the boards wrap. ?board=N still pins a board
+   for testing; a pinned board reads and writes nothing, so it is not a way off the daily. */
+const EPOCH=Date.UTC(2026,8,15);
+function todayNo(){ const t=new Date();
+  return Math.round((Date.UTC(t.getFullYear(),t.getMonth(),t.getDate())-EPOCH)/864e5)+1; }
+function boardFor(n){ const L=PUZZLES.length; return ((n-1)%L+L)%L; }
+const PIN=(function(){ const m=/[?&]board=(\d+)/.exec(location.search);
   const v=m?parseInt(m[1],10):0;
-  return (v>=1&&v<=PUZZLES.length) ? v-1 : randomBoard(-1); })();
+  return (v>=1&&v<=PUZZLES.length) ? v-1 : -1; })();
+let dayNo=todayNo();
 
-let day=BOARD0, P, stocks, rackOrder, cur, touches, tilt, glow, depth=[], selected=null, ceilG=0;
+let day=(PIN>=0?PIN:boardFor(dayNo)), P, stocks, rackOrder, cur, touches, tilt, glow, depth=[], selected=null, ceilG=0;
+
+/* Persistence: localStorage, one key, no backend. The day you are on, the board as it stands,
+   your streak and the last day you solved. Mid-board state is not optional - without it a
+   refresh erases your swaps. A finished day comes back solved and frozen. A day not solved
+   ends the streak; the streak is days solved in a row, and the day counts once it is level. */
+const KEY='heft';
+let streak=0, lastDone=0, frozen=false;
+function readState(){ try{ return JSON.parse(localStorage.getItem(KEY))||null; }catch(e){ return null; } }
+function save(){ if(PIN>=0) return;
+  try{ localStorage.setItem(KEY, JSON.stringify({v:1,day:dayNo,cur:cur,touches:touches,streak:streak,last:lastDone})); }catch(e){} }
 
 
 /* wordmark: four letters hanging from the top edge of the header, which is the top of the
@@ -286,6 +297,14 @@ function mix(a,b,t){ const p=function(h){return [1,3,5].map(function(i){return p
 function load(){
   P=PUZZLES[day]; P._arms=armList(P.tree,[]);
   cur=new Array(P.nh).fill(null); touches=new Array(P.nh).fill(0); hitPts=[];
+  const s=(PIN>=0)?null:readState();
+  if(s){
+    streak=s.streak|0; lastDone=s.last|0;
+    if(lastDone<dayNo-1) streak=0;                  // a missed day ends the streak
+    if(s.day===dayNo && Array.isArray(s.cur) && s.cur.length===P.nh){
+      cur=s.cur.slice(); touches=s.touches.slice();  // the board as it was left
+    }
+  }
   tilt=P._arms.map(function(){return {cur:0,ph:Math.random()*6.28};});
   glow=P._arms.map(function(){return 0;}); ceilG=0;
   depth=[]; (function mk(n,dd){ if(n.t!=='a') return; depth[n._i]=dd; mk(n.l,dd+1); mk(n.r,dd+1); })(P.tree,0);
@@ -298,6 +317,7 @@ function load(){
   stocks=ORDERED.slice(0,P.k);
   rackOrder=stocks.map(function(_,i){return i;});
   selected=null;
+  frozen=solved();                                  // a finished day comes back frozen
 
   document.getElementById('copy').style.display='none';
   document.getElementById('copy').textContent=shareLabel();
@@ -532,7 +552,7 @@ function buildRack(){
     b.setAttribute('data-type',type);
     b.innerHTML='<svg viewBox="0 0 48 48"><path d="'+CELLS[stocks[type]]+'" fill="'+REST+'"/></svg>'
       +'<div class="allow">'+Array.from({length:P.cap},function(){return '<i></i>';}).join('')+'</div>';
-    b.onclick=function(){selected=(selected===type)?null:type;syncRack();message();};
+    b.onclick=function(){if(frozen)return;selected=(selected===type)?null:type;syncRack();message();};
     rack.appendChild(b);
   });
   syncRack();
@@ -546,19 +566,23 @@ function syncRack(){
   });
 }
 function tapHook(i){
-  if(i<0||i>=P.nh) return;
+  if(i<0||i>=P.nh||frozen) return;
   if(lockedHooks().has(i)) return;
   if(cur[i]!=null){ cur[i]=null; selected=null; }
   else if(selected!=null&&used(selected)<P.cap){ cur[i]=selected; touches[i]++; selected=null; }
-  syncRack(); message();
+  if(solved()){                                    // the day is done: it counts, and it freezes
+    frozen=true; streak=(lastDone===dayNo-1)?streak+1:1; lastDone=dayNo;
+  }
+  save(); syncRack(); message();
 }
 // The score: swaps. Hanging a weight where one already hung. Called rehangs from 1.4.7 to
 // 1.6.6; the count is unchanged, only the word (1.6.7). Exchanging two hung weights is two.
 function swaps(){ return touches.reduce(function(s,n){return s+Math.max(0,n-1);},0); }
 function solved(){ return cur.every(function(x){return x!=null;}) && P._arms.every(balanced); }
 const MON=['Jan','Feb','Mar','Apr','May','June','July','Aug','Sept','Oct','Nov','Dec'];
-function stamp(){ const t=new Date(); return 'No '+(day+1)+' • '+MON[t.getMonth()]+' '+t.getDate(); }
-function scoreLine(){ const c=swaps(); return c+' Swap'+(c===1?'':'s'); }
+function stamp(){ const t=new Date();
+  return (PIN>=0?'Board '+(day+1):'No '+dayNo)+' • '+MON[t.getMonth()]+' '+t.getDate(); }
+function scoreLine(){ const c=swaps(); return c+' Swap'+(c===1?'':'s')+(PIN>=0?'':' • Streak '+streak); }
 function resultText(){ return '\u2696\ufe0f H E F T \u2696\ufe0f\n'+stamp()+'\n'+grid()+'\n'+scoreLine(); }
 function shareText(){ return resultText()+'\nhttps://heftdaily.com'; }   // what leaves the page; the on-screen card has no link. With the scheme, Messages unfurls it into a preview card
 function grid(){ return touches.map(function(n){const c=Math.max(0,n-1);
@@ -569,8 +593,9 @@ function message(){
   const cn = c>0 ? '<span style="color:var(--rest)">'+c+'</span>' : c;
   document.getElementById('meta').innerHTML=stamp()
     +'<br>'+P.nh+' hooks \u2022 '+P.k+' weights'
-    +'<br>'+cn+' swap'+(c===1?'':'s');
+    +'<br>'+cn+' swap'+(c===1?'':'s')+(PIN<0&&streak>0?' \u2022 streak '+streak:'');
   promptEl.classList.toggle('win',done);
+  document.getElementById('reset').style.display=frozen?'none':'';
   if(!done){                                   // taking a weight back off retires the result
     const cb=document.getElementById('copy');
     cb.style.display='none'; cb.classList.remove('go'); cb.textContent=shareLabel();
@@ -599,10 +624,11 @@ function message(){
 document.getElementById('build').textContent='build '+BUILD
   +(BUILD_OK?'':' \u00b7 BUILD MISMATCH')+(INK_F!==1?' \u00b7 ink '+INK_F:'')+(FLOOR_DEG!==1.25?' \u00b7 floor '+FLOOR_DEG:'')+(Math.abs(MAX_TILT-15*Math.PI/180)>1e-9?' \u00b7 tiltmax '+(MAX_TILT*180/Math.PI).toFixed(0):'')+(TILT_EXP!==1?' \u00b7 tilt '+TILT_EXP:'')+(GLYPHS!=='point'?' \u00b7 glyphs '+GLYPHS:'')
   +(BOW_F!==0?' \u00b7 bow '+BOW_F:'');
-document.getElementById('reset').onclick=function(){var L=lockedHooks();
+document.getElementById('reset').onclick=function(){if(frozen)return;var L=lockedHooks();
   for(var i=0;i<P.nh;i++) if(!L.has(i)) cur[i]=null;
-  selected=null;syncRack();message();};
-document.getElementById('next').onclick=function(){day=randomBoard(day);load();};
+  selected=null;save();syncRack();message();};
+// left open across midnight, the page is on yesterday's board; coming back to it reloads
+document.addEventListener('visibilitychange',function(){ if(!document.hidden&&PIN<0&&todayNo()!==dayNo) location.reload(); });
 /* Share opens the phone's share sheet with the card already in it - Messages, or anything
    else - which is as close as a page is allowed to get to "open Messages and paste". Where
    there is no sheet (desktop), the button copies instead. Same text either way (1.6.8). */
