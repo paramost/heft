@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en" data-build="1.6.8">
+<html lang="en" data-build="1.6.9">
 <head>
 <meta charset="utf-8">
-<!-- Heft build 1.6.8 -->
+<!-- Heft build 1.6.9 -->
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Heft</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23161d4a'/%3E%3Cpath d='M8 7H13.5V13.25H18.5V7H24V25H18.5V17.75H13.5V25H8Z' fill='%23dfe6ff'/%3E%3C/svg%3E">
@@ -71,7 +71,7 @@
 
 <script src="boards.js"></script>
 <script>
-const BUILD='1.6.8';
+const BUILD='1.6.9';
 /* the build string sits in three places so it can be read without running the page: here,
    an html attribute, and a comment in the head. Three copies can disagree, so they are
    checked against each other - a number that lies is worse than one that is hard to read. */
@@ -406,7 +406,7 @@ function draw(t){
        the arm settled. Two invisible ticks at the ends give the group 24 units of height and the
        region something to measure. Found by Dan on an iPad (1.6.8). */
     if(gT>0){
-      const gl=el('g',{filter:'url(#warm)'});
+      const gl=el('g',{filter:'url(#bloom)'});          // the weights' glow, not the pulleys' (1.6.9)
       gl.appendChild(el('path',{d:'M'+aL[0].toFixed(1)+' '+(aL[1]-12).toFixed(1)+'V'+(aL[1]+12).toFixed(1)
         +'M'+aR[0].toFixed(1)+' '+(aR[1]-12).toFixed(1)+'V'+(aR[1]+12).toFixed(1),stroke:'none',fill:'none'}));
       gl.appendChild(el('path',{d,stroke:LIT,'stroke-width':'2.5',fill:'none','stroke-linecap':'round',
@@ -550,6 +550,8 @@ const MON=['Jan','Feb','Mar','Apr','May','June','July','Aug','Sept','Oct','Nov',
 function stamp(){ const t=new Date(); return 'No '+(day+1)+' • '+MON[t.getMonth()]+' '+t.getDate(); }
 function scoreLine(){ const c=swaps(); return c+' Swap'+(c===1?'':'s'); }
 function resultText(){ return '\u2696\ufe0f H E F T \u2696\ufe0f\n'+stamp()+'\n'+grid()+'\n'+scoreLine(); }
+const SITE='https://heftdaily.com';
+function shareText(){ return resultText()+'\nheftdaily.com'; }   // what leaves the page; the on-screen card has no link
 function grid(){ return touches.map(function(n){const c=Math.max(0,n-1);
   return c===0?'🟢':c===1?'🟡':c===2?'🟠':'🔴';}).join(''); }
 function message(){
@@ -601,11 +603,11 @@ document.getElementById('copy').onclick=function(){
   if(navigator.share){
     // the card goes to the clipboard too: Chrome on iOS has been seen handing Messages only the
     // page link, and a paste should work whatever the sheet did
-    if(navigator.clipboard) navigator.clipboard.writeText(resultText()).catch(function(){});
-    navigator.share({title:'Heft',text:resultText()}).then(function(){ cb.textContent='Shared'; })
+    if(navigator.clipboard) navigator.clipboard.writeText(shareText()).catch(function(){});
+    navigator.share({title:'Heft',text:resultText(),url:SITE}).then(function(){ cb.textContent='Shared'; })
       .catch(function(){});                       // the sheet was dismissed; say nothing
   } else {
-    if(navigator.clipboard) navigator.clipboard.writeText(resultText());
+    if(navigator.clipboard) navigator.clipboard.writeText(shareText());
     cb.textContent='Copied';
   }};
 function boardPoint(ev){
