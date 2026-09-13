@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en" data-build="1.7.0">
+<html lang="en" data-build="1.7.1">
 <head>
 <meta charset="utf-8">
-<!-- Heft build 1.7.0 -->
+<!-- Heft build 1.7.1 -->
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Heft</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23161d4a'/%3E%3Cpath d='M8 7H13.5V13.25H18.5V7H24V25H18.5V17.75H13.5V25H8Z' fill='%23dfe6ff'/%3E%3C/svg%3E">
@@ -69,7 +69,7 @@
 
 <script src="boards.js"></script>
 <script>
-const BUILD='1.7.0';
+const BUILD='1.7.1';
 /* the build string sits in three places so it can be read without running the page: here,
    an html attribute, and a comment in the head. Three copies can disagree, so they are
    checked against each other - a number that lies is worse than one that is hard to read. */
@@ -521,12 +521,12 @@ function tapHook(i){
   if(cur.every(function(x){return x!=null;})) reading();
   syncRack(); message();
 }
-/* THE SCORE IS ATTEMPTS (1.7.0). An attempt is a full board: fill every hook and the mobile
-   gives a reading, level or not. Each reading is recorded as one mark per arm - level, tipped
+/* THE SCORE IS HEFTS (1.7.0; named in 1.7.1). A heft is a full board: fill every hook, lift the
+   whole mobile, and it gives a reading, level or not. Each reading is recorded as one mark per arm - level, tipped
    right, tipped left - in screen order, and the score is how many readings it took. Rehangs,
    the score until 1.6.6, charged by the hook, so a wrong pair on a leaf arm cost two and a
    rebuilt branch cost four for what was in each case one wrong reading; the record's own data
-   showed it - scores clustered at zero, four and six. An attempt charges for the reading.
+   showed it - scores clustered at zero, four and six. A heft charges for the reading.
    Filling the same arrangement twice is one reading, not two. Nothing here consults the
    solution: a mark says what the arm did, which the player already saw. */
 let ARM_ORDER=[];
@@ -545,7 +545,7 @@ function reading(){
 function solved(){ return cur.every(function(x){return x!=null;}) && P._arms.every(balanced); }
 const MON=['Jan','Feb','Mar','Apr','May','June','July','Aug','Sept','Oct','Nov','Dec'];
 function stamp(){ const t=new Date(); return 'No '+(day+1)+' • '+MON[t.getMonth()]+' '+t.getDate(); }
-function scoreLine(){ return 'Level in '+attempts.length; }
+function scoreLine(){ const c=attempts.length; return c+' Heft'+(c===1?'':'s'); }
 // one row per reading: a flat stroke for a level arm, an arrow for the way it tipped
 const MARK={'0':'\u2796', '1':'\u2198\ufe0f', '-1':'\u2199\ufe0f'};
 function rows(){ return attempts.map(function(a){ return a.marks.map(function(m){return MARK[String(m)];}).join(''); }); }
@@ -557,7 +557,7 @@ function message(){
   const cn = c>0 ? '<span style="color:var(--rest)">'+going+'</span>' : going;
   document.getElementById('meta').innerHTML=stamp()
     +'<br>'+P.nh+' hooks \u2022 '+P.k+' weights'
-    +'<br>'+(done ? 'level in '+cn : 'attempt '+cn);
+    +'<br>'+(done ? cn+' heft'+(c===1?'':'s') : 'heft '+cn);
   promptEl.classList.toggle('win',done);
   if(!done){                                   // taking a weight back off retires the result
     const cb=document.getElementById('copy');
