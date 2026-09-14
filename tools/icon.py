@@ -13,7 +13,10 @@ preview per URL.
 import struct, sys, zlib
 
 SIZE, SS = 180, 4                       # output pixels, supersample factor
+# the header blue behind the ink; --test swaps it for the weight orange, so a branch preview's
+# link card reads orange in Messages and cannot be mistaken for the live game.
 BG, INK = (0x16, 0x1d, 0x4a), (0xdf, 0xe6, 0xff)
+TEST_BG = (0xc9, 0x8f, 0x4a)
 # the H, in the favicon's 32-unit space: two stems and a crossbar
 RECTS = [(8, 7, 13.5, 25), (18.5, 7, 24, 25), (13.5, 13.25, 18.5, 17.75)]
 
@@ -22,7 +25,7 @@ def inside(x, y):
     return any(x0 <= x < x1 and y0 <= y < y1 for x0, y0, x1, y1 in RECTS)
 
 
-def render():
+def render(bg=BG):
     k = 32.0 / (SIZE * SS)
     rows = []
     for py in range(SIZE):
@@ -33,7 +36,7 @@ def render():
                 for sx in range(SS):
                     hit += inside((px * SS + sx + 0.5) * k, (py * SS + sy + 0.5) * k)
             t = hit / (SS * SS)
-            row += bytes(round(b + (i - b) * t) for b, i in zip(BG, INK))
+            row += bytes(round(b + (i - b) * t) for b, i in zip(bg, INK))
         rows.append(bytes(row))
     return rows
 
@@ -50,6 +53,8 @@ def png(rows):
 
 
 if __name__ == "__main__":
-    out = sys.argv[1] if len(sys.argv) > 1 else "icon-1.png"
-    open(out, "wb").write(png(render()))
+    args = [a for a in sys.argv[1:] if a != "--test"]
+    test = "--test" in sys.argv
+    out = args[0] if args else ("icon-test.png" if test else "icon-1.png")
+    open(out, "wb").write(png(render(TEST_BG if test else BG)))
     print("wrote", out)
