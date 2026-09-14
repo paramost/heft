@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en" data-build="1.7.0">
+<html lang="en" data-build="1.7.1">
 <head>
 <meta charset="utf-8">
-<!-- Heft build 1.7.0 -->
+<!-- Heft build 1.7.1 -->
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>HEFT · test</title>
 <meta property="og:title" content="HEFT · test">
@@ -80,7 +80,7 @@
 
 <script src="boards.js"></script>
 <script>
-const BUILD='1.7.0';
+const BUILD='1.7.1';
 /* the build string sits in three places so it can be read without running the page: here,
    an html attribute, and a comment in the head. Three copies can disagree, so they are
    checked against each other - a number that lies is worse than one that is hard to read. */
@@ -114,25 +114,25 @@ const WIRE='#4d59a6', REST='#c98f4a', LIT='#7ef0ff', INK='#dfe6ff';
 const GLYPH_SETS={
  flat:{
   cells:{
-   prism:'M24.00 37.77L39.90 10.23L8.10 10.23z',
+   prism:'M24.00 36.83L38.81 11.17L9.19 11.17z',
    hex:'M16.75 11.44L31.25 11.44L38.50 24.00L31.25 36.56L16.75 36.56L9.50 24.00z',
    pent:'M24.00 38.50L39.20 27.40L33.40 9.50L14.60 9.50L8.80 27.40z',
    house:'M24.00 38.50L39.00 24.00L39.00 9.50L9.00 9.50L9.00 24.00z',
    square:'M9.50 9.50L38.50 9.50L38.50 38.50L9.50 38.50z',
   },
-  ordered:['prism','hex','pent','house','square'],                     // 438 546 609 652 841
-  top:{prism:10.23, hex:11.44, pent:9.5, house:9.5, square:9.5},
+  ordered:['prism','hex','pent','house','square'],                     // 380 546 609 652 841
+  top:{prism:11.17, hex:11.44, pent:9.5, house:9.5, square:9.5},
  },
  point:{
   cells:{
    diamond:'M24.0 9.5L38.5 24.0L24.0 38.5L9.5 24.0z',
-   prism:'M24.00 10.23L39.90 37.77L8.10 37.77z',
+   prism:'M24.00 11.17L38.81 36.83L9.19 36.83z',
    hex:'M24.00 9.50L36.56 16.75L36.56 31.25L24.00 38.50L11.44 31.25L11.44 16.75z',
    pent:'M24.0 9.5L39.2 20.6L33.4 38.5L14.6 38.5L8.8 20.6z',
    house:'M24.0 9.5L39.0 24.0L39.0 38.5L9.0 38.5L9.0 24.0z',
   },
-  ordered:['diamond','prism','hex','pent','house'],                   // 420 438 546 609 652
-  top:{diamond:9.5, prism:10.23, hex:9.5, pent:9.5, house:9.5},
+  ordered:['diamond','prism','hex','pent','house'],                   // 420 380 546 609 652 (triangle shaved 1px all round, 1.7.1)
+  top:{diamond:9.5, prism:11.17, hex:9.5, pent:9.5, house:9.5},
  },
 };
 const GLYPHS=(function(){ const m=location.search.match(/[?&]glyphs=(point|flat)/); return m?m[1]:'point'; })();
@@ -602,10 +602,10 @@ function streakNow(){ return TESTING ? 0 : (store.streak||0); }
 function swaps(){ return touches.reduce(function(s,n){return s+Math.max(0,n-1);},0); }
 function solved(){ return cur.every(function(x){return x!=null;}) && P._arms.every(balanced); }
 const MON=['Jan','Feb','Mar','Apr','May','June','July','Aug','Sept','Oct','Nov','Dec'];
-function stamp(){ const t=dateForDay(DAY_NO); return 'No '+DAY_NO+' • '+MON[t.getUTCMonth()]+' '+t.getUTCDate(); }
-function scoreLine(){ const c=swaps(); return c+' Swap'+(c===1?'':'s'); }
-function streakLine(pre){ const k=streakNow(); return k>=2 ? pre+'Streak '+k : ''; }
-function resultText(){ return '\u2696\ufe0f H E F T \u2696\ufe0f\n'+stamp()+'\n'+grid()+'\n'+scoreLine()+streakLine('\n'); }
+function stamp(){ const t=dateForDay(DAY_NO); return MON[t.getUTCMonth()]+' '+t.getUTCDate()+' • No '+DAY_NO; }
+// one stat row: swaps, and the streak beside it once it is worth showing (>= 2)
+function scoreLine(){ const c=swaps(), k=streakNow(); return 'Swaps: '+c+(k>=2 ? ' \u2022 Streak: '+k : ''); }
+function resultText(){ return '\u2696\ufe0f H E F T \u2696\ufe0f\n'+stamp()+'\n'+grid()+'\n'+scoreLine(); }
 function shareText(){ return resultText()+'\nhttps://heftdaily.com'; }   // what leaves the page; the on-screen card has no link. With the scheme, Messages unfurls it into a preview card
 function grid(){ return touches.map(function(n){const c=Math.max(0,n-1);
   return c===0?'🟢':c===1?'🟡':c===2?'🟠':'🔴';}).join(''); }
@@ -627,8 +627,7 @@ function message(){
       '<div class="stitle">\u2696\ufe0f H E F T \u2696\ufe0f</div>'+
       '<div class="sline">'+stamp()+'</div>'+
       '<div class="sgrid">'+grid()+'</div>'+
-      '<div class="sline">'+scoreLine()+'</div>'+
-      (streakNow()>=2 ? '<div class="sline">Streak '+streakNow()+'</div>' : '');
+      '<div class="sline">'+scoreLine()+'</div>';
     document.getElementById('copy').style.display='';
     document.getElementById('copy').classList.add('go');
   }
