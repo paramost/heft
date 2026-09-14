@@ -79,6 +79,17 @@ unsteady? New in 1.2 and unanswered.
 
 ## Phase 4 — open design questions
 
+**Seasonal glyphs.** Dan wants festive weight sets for Halloween, Thanksgiving and Christmas,
+soon. Same constraints as the regular set — five shapes, a readable lightest-to-heaviest order by
+apparent weight, pointed tops so they hang from the cord, distinct silhouettes at 44px — just
+themed (pumpkin/bat/ghost…, turkey/leaf/acorn…, tree/bell/star…). A date-driven switch could
+select the set, alongside the daily's date logic. The apparent-weight ordering is the hard part,
+as it was for the base set; measure the ink, judge on a phone.
+
+**The practice URL is a standing feature.** `heftdaily.com/?practice` must always play random
+boards on the *current live build*, with a Next button, writing and logging nothing — a way to
+test the shipped game without touching the daily or its data. Preserve it through future builds.
+
 **Reclaim the 43-unit side pad.** The only lever that makes the mobile bigger — ×1.11 at 22 units,
 ×1.17 at 10 — since 141 of 144 boards are width-limited. The pad exists so a hook's tap zone stays
 inside the element, and hit testing has since moved to a delegated distance test, so it may no

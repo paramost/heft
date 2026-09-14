@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en" data-build="1.7.7">
+<html lang="en" data-build="1.7.8">
 <head>
 <meta charset="utf-8">
-<!-- Heft build 1.7.7 -->
+<!-- Heft build 1.7.8 -->
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>HEFT · test</title>
 <meta property="og:title" content="HEFT · test">
@@ -74,13 +74,14 @@
 <div class="rack" id="rack"></div>
 <footer>
   <button class="btn" id="reset">Clear</button>
+  <button class="btn" id="next" style="display:none">Next board</button>
   <button class="btn" id="copy" style="display:none">Copy result</button>
 </footer>
 <div class="build" id="build"></div>
 
 <script src="boards.js"></script>
 <script>
-const BUILD='1.7.7';
+const BUILD='1.7.8';
 /* the build string sits in three places so it can be read without running the page: here,
    an html attribute, and a comment in the head. Three copies can disagree, so they are
    checked against each other - a number that lies is worse than one that is hard to read. */
@@ -191,28 +192,60 @@ function sw(base){ return (base*WS).toFixed(2); }
    the design notes from that round are in heft-plan.md. `localStorage`, no backend.
    ?day=N and ?board=N are testing pins: they write nothing, so testing cannot touch a player's
    real day or streak. */
-const EPOCH=Date.UTC(2026,8,14);                 // No 1 is 14 Sept 2026 (month is 0-based)
+const EPOCH=Date.UTC(2026,8,15);                 // No 1 is 15 Sept 2026 (month is 0-based)
 const L=PUZZLES.length;
 function dayNumber(){ const t=new Date();
   return Math.floor((Date.UTC(t.getFullYear(),t.getMonth(),t.getDate())-EPOCH)/86400000)+1; }
 function dateForDay(n){ return new Date(EPOCH+(n-1)*86400000); }   // read with getUTC* to match the boundary
+function randomBoard(not){ if(L<2) return 0; let n; do{ n=Math.floor(Math.random()*L); }while(n===not); return n; }
 
+/* Four ways the page runs, and only the first writes or logs anything:
+   - the daily: no params, on or after the epoch. Saves state, keeps a streak, logs anonymously.
+   - preview (PRELAUNCH): before the epoch, no params. Plays No 1 as a no-write preview so
+     testing today does not dirty the first day's numbers. Rolls over to the live daily at midnight.
+   - practice (?practice): random boards on the live build with a Next button, writing nothing -
+     a permanent way to test the game as shipped.
+   - a pin (?board=N / ?day=N): one fixed board or day for testing, writing nothing. */
 const PIN=(function(){ const b=/[?&]board=(\d+)/.exec(location.search), d=/[?&]day=(-?\d+)/.exec(location.search);
   if(b){ const v=parseInt(b[1],10); if(v>=1&&v<=L) return {kind:'board', dayNo:v, idx:v-1, label:'board '+v}; }
   if(d){ const v=parseInt(d[1],10); return {kind:'day', dayNo:v, idx:((v-1)%L+L)%L, label:'day '+v}; }
   return null; })();
-const TESTING=!!PIN;
-const DAY_NO = PIN ? PIN.dayNo : Math.max(1, dayNumber());   // before the epoch, show No 1
+const PRACTICE = !PIN && /[?&]practice/.test(location.search);
+const rawDay = PIN ? PIN.dayNo : dayNumber();
+const PRELAUNCH = !PIN && !PRACTICE && rawDay < 1;
+const DAY_NO = PIN ? PIN.dayNo : (PRELAUNCH ? 1 : rawDay);   // preview shows No 1
+const NOWRITE = !!PIN || PRACTICE || PRELAUNCH;              // only the real daily persists and logs
 
 const KEY='heft', STORE_V=1;
 /* The stored object carries a version. The schema will change - the Light rung will make two
    boards per day - and a change without a version to migrate from risks misreading or wiping a
    player's streak. A future build reads store.v and migrates; an object with no v is v1. */
 function loadStore(){ try{ const o=JSON.parse(localStorage.getItem(KEY))||{}; if(!o.v) o.v=STORE_V; return o; }catch(e){ return {v:STORE_V}; } }
-function saveStore(){ if(TESTING) return; try{ store.v=STORE_V; localStorage.setItem(KEY,JSON.stringify(store)); }catch(e){} }
+function saveStore(){ if(NOWRITE) return; try{ store.v=STORE_V; localStorage.setItem(KEY,JSON.stringify(store)); }catch(e){} }
 let store=loadStore();
 
-let day=PIN?PIN.idx:((DAY_NO-1)%L+L)%L, P, stocks, rackOrder, cur, touches, tilt, glow, depth=[], selected=null, ceilG=0, frozen=false;
+/* Anonymous, aggregate-only logging (1.7.8). Each event is sent at most once per day per device
+   (a localStorage flag), carries no id and no IP - the server keeps counts, nothing more. Only
+   the live daily logs; ?log=1 probes the client path into a separate test namespace. */
+const LOG_LIVE = location.hostname==='heftdaily.com';
+const LOG_PROBE = /[?&]log=1/.test(location.search);
+function logEvent(name, swaps){
+  if(PIN || PRACTICE) return;
+  if(PRELAUNCH && !LOG_PROBE) return;
+  if(!LOG_LIVE && !LOG_PROBE) return;
+  try{
+    if(!LOG_PROBE){ const f=JSON.parse(localStorage.getItem('heftlog'))||{}, k=DAY_NO+':'+name;
+      if(f[k]) return; f[k]=1; localStorage.setItem('heftlog',JSON.stringify(f)); }
+  }catch(e){}
+  const body={day:DAY_NO, event:name};
+  if(name==='solved') body.swaps=swaps;
+  if(LOG_PROBE) body.probe=1;
+  try{ fetch('/api/event',{method:'POST',headers:{'Content-Type':'application/json'},
+       body:JSON.stringify(body),keepalive:true}).catch(function(){}); }catch(e){}
+}
+
+let day = PIN ? PIN.idx : PRACTICE ? randomBoard(-1) : ((DAY_NO-1)%L+L)%L,
+    P, stocks, rackOrder, cur, touches, tilt, glow, depth=[], selected=null, ceilG=0, frozen=false;
 
 
 /* wordmark: four letters hanging from the top edge of the header, which is the top of the
@@ -319,7 +352,7 @@ function load(){
 
   // restore the saved state for this day, or claim the day with a fresh board. The streak and
   // last-solved live in the same record and are carried across days untouched.
-  if(!TESTING){
+  if(!NOWRITE){
     if(store.day===DAY_NO && Array.isArray(store.cur) && store.cur.length===P.nh){
       cur=store.cur.slice(); touches=(store.touches||cur.map(function(){return 0;})).slice();
       if(store.done){ frozen=true; }                 // a finished day comes back solved and frozen
@@ -332,6 +365,7 @@ function load(){
   document.getElementById('copy').style.display='none';
   document.getElementById('copy').textContent=shareLabel();
   document.getElementById('copy').classList.remove('go');
+  logEvent('opened');
   buildRack(); fit(); message();
 }
 
@@ -580,7 +614,8 @@ function tapHook(i){
   if(i<0||i>=P.nh) return;
   if(lockedHooks().has(i)) return;
   if(cur[i]!=null){ cur[i]=null; selected=null; }
-  else if(selected!=null&&used(selected)<P.cap){ cur[i]=selected; touches[i]++; selected=null; }
+  else if(selected!=null&&used(selected)<P.cap){ cur[i]=selected; touches[i]++; selected=null;
+    if(cur.filter(function(x){return x!=null;}).length===1) logEvent('first_hang'); }
   if(solved()) commitSolve(); else saveState();
   syncRack(); message();
 }
@@ -588,10 +623,11 @@ function tapHook(i){
    the swaps and re-rolling the day. commitSolve runs once, when the board first comes level: it
    freezes the day, and advances the streak - up one if yesterday was solved, back to one if a
    day was missed. Neither consults the solution; both are facts about what the player did. */
-function saveState(){ if(TESTING) return; store.day=DAY_NO; store.cur=cur.slice(); store.touches=touches.slice(); store.done=false; saveStore(); }
+function saveState(){ if(NOWRITE) return; store.day=DAY_NO; store.cur=cur.slice(); store.touches=touches.slice(); store.done=false; saveStore(); }
 function commitSolve(){
   frozen=true;
-  if(TESTING) return;
+  logEvent('solved', swaps());
+  if(NOWRITE) return;
   if(store.done && store.day===DAY_NO) return;
   const last=store.lastSolved||0;
   store.streak = (last===DAY_NO) ? (store.streak||1) : (last===DAY_NO-1 ? (store.streak||0)+1 : 1);
@@ -603,7 +639,7 @@ function commitSolve(){
   store.solved=(store.solved||0)+1;
   saveStore();
 }
-function streakNow(){ return TESTING ? 0 : (store.streak||0); }
+function streakNow(){ return NOWRITE ? 0 : (store.streak||0); }
 // The score: swaps. Hanging a weight where one already hung. Called rehangs from 1.4.7 to
 // 1.6.6; the count is unchanged, only the word (1.6.7). Exchanging two hung weights is two.
 function swaps(){ return touches.reduce(function(s,n){return s+Math.max(0,n-1);},0); }
@@ -651,13 +687,14 @@ function message(){
 // fixed for the life of the page, so it is written once rather than on every tap
 document.getElementById('build').textContent='build '+BUILD
   +(BUILD_OK?'':' \u00b7 BUILD MISMATCH')+(INK_F!==1?' \u00b7 ink '+INK_F:'')+(FLOOR_DEG!==1.25?' \u00b7 floor '+FLOOR_DEG:'')+(Math.abs(MAX_TILT-15*Math.PI/180)>1e-9?' \u00b7 tiltmax '+(MAX_TILT*180/Math.PI).toFixed(0):'')+(TILT_EXP!==1?' \u00b7 tilt '+TILT_EXP:'')+(GLYPHS!=='point'?' \u00b7 glyphs '+GLYPHS:'')
-  +(BOW_F!==0?' \u00b7 bow '+BOW_F:'')+(PIN?' \u00b7 '+PIN.label:'');
+  +(BOW_F!==0?' \u00b7 bow '+BOW_F:'')+(PIN?' \u00b7 '+PIN.label:'')+(PRACTICE?' \u00b7 practice':'')+(PRELAUNCH?' \u00b7 preview':'');
 document.getElementById('reset').onclick=function(){ if(frozen) return; var Lk=lockedHooks();
   for(var i=0;i<P.nh;i++) if(!Lk.has(i)) cur[i]=null;
   selected=null; saveState(); syncRack(); message();};
 // "Another day" is gone: with a daily, a browse button would be a way off the day's board.
 // If the tab is left open across midnight, the next look moves to the new day.
-document.addEventListener('visibilitychange',function(){ if(!document.hidden && !TESTING && dayNumber()>DAY_NO) location.reload(); });
+document.addEventListener('visibilitychange',function(){ if(!document.hidden && !PIN && !PRACTICE && dayNumber()!==rawDay) location.reload(); });
+if(PRACTICE){ const nx=document.getElementById('next'); nx.style.display=''; nx.onclick=function(){ day=randomBoard(day); load(); }; }
 /* Share opens the phone's share sheet with the card already in it - Messages, or anything
    else - which is as close as a page is allowed to get to "open Messages and paste". Where
    there is no sheet (desktop), the button copies instead. Same text either way (1.6.8). */
