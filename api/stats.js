@@ -13,7 +13,7 @@ module.exports = async function handler(req, res) {
   const base = process.env.KV_REST_API_URL, tok = process.env.KV_REST_API_TOKEN;
   if (!base || !tok) { res.statusCode = 200; res.setHeader('Content-Type', 'application/json'); return res.end(JSON.stringify({ days: 0, data: {}, note: 'KV not connected yet' })); }
 
-  const days = Math.min(Math.max(parseInt(q.days, 10) || 60, 1), 400);
+  const days = Math.min(Math.max(parseInt(q.days, 10) || 60, 1), 120);   // bound the pipeline size
   const pre = q.probe ? 't' : 'd';
   const cmds = [], meta = [];
   for (let d = 1; d <= days; d++) {
