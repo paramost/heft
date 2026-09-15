@@ -22,7 +22,7 @@ module.exports = async function handler(req, res) {
 
     const day = Number(b.day);
     if (!Number.isInteger(day) || day < 1 || day > 100000) { res.statusCode = 204; return res.end(); }
-    if (!EVENTS[b.event]) { res.statusCode = 204; return res.end(); }
+    if (!Object.prototype.hasOwnProperty.call(EVENTS, b.event)) { res.statusCode = 204; return res.end(); }  // own keys only, not inherited (constructor, __proto__, ...)
 
     const pre = b.probe ? 't' : 'd';
     const cmds = [['INCR', pre + ':' + day + ':' + b.event]];
