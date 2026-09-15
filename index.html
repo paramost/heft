@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en" data-build="1.8.2">
+<html lang="en" data-build="1.8.3">
 <head>
 <meta charset="utf-8">
-<!-- Heft build 1.8.2 -->
+<!-- Heft build 1.8.3 -->
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>HEFT</title>
 <meta property="og:title" content="HEFT">
@@ -81,7 +81,7 @@
 
 <script src="boards.js"></script>
 <script>
-const BUILD='1.8.2';
+const BUILD='1.8.3';
 /* the build string sits in three places so it can be read without running the page: here,
    an html attribute, and a comment in the head. Three copies can disagree, so they are
    checked against each other - a number that lies is worse than one that is hard to read. */
@@ -216,11 +216,13 @@ const PRELAUNCH = !PIN && !PRACTICE && rawDay < 1;
 const DAY_NO = PIN ? PIN.dayNo : (PRELAUNCH ? 1 : rawDay);   // preview shows No 1
 const NOWRITE = !!PIN || PRACTICE || PRELAUNCH;              // only the real daily persists and logs
 
-const KEY='heft', STORE_V=1;
+const KEY='heft', STORE_V=2;
 /* The stored object carries a version. The schema will change - the Light rung will make two
    boards per day - and a change without a version to migrate from risks misreading or wiping a
    player's streak. A future build reads store.v and migrates; an object with no v is v1. */
-function loadStore(){ try{ const o=JSON.parse(localStorage.getItem(KEY))||{}; if(!o.v) o.v=STORE_V; return o; }catch(e){ return {v:STORE_V}; } }
+function loadStore(){ try{ const o=JSON.parse(localStorage.getItem(KEY))||{};
+  if((o.v||1) < 2){ delete o.day; delete o.cur; delete o.touches; delete o.done; }  // touches changed meaning (placements -> swaps) in 1.8.3; drop the stale in-progress board, keep the streak
+  o.v=STORE_V; return o; }catch(e){ return {v:STORE_V}; } }
 function saveStore(){ if(NOWRITE) return; try{ store.v=STORE_V; localStorage.setItem(KEY,JSON.stringify(store)); }catch(e){} }
 let store=loadStore();
 
@@ -531,12 +533,11 @@ function draw(t){
       g.appendChild(el('circle',{cx:p[0],cy:p[1],r:'15.5',fill:'none',
         stroke:armed?REST:WIRE_B,'stroke-width':armed?sw(1.5):sw(1.1),
         'stroke-opacity':armed?'.9':'.45',filter:armed?'url(#warm)':''}));
-      /* The socket shows the swaps spent on this hook - touches-1, the same basis as the score
-         and the end-of-game circles (1.6.7 Dan's idea; 1.8.1 aligned to swaps). The first
-         placement is free, so a hook stays 0 through its first place-and-lift and only ticks to
-         1 when a re-hang actually costs; the sockets then sum to the swaps counter in the header.
-         Zero is dim; anything else is ink. */
-      const n=Math.max(0, touches[i]-1);
+      /* The socket shows this hook's swaps. touches counts removals now (1.8.3): a number can't
+         sit on a hung weight, so the count ticks up the moment you lift a weight off - honest,
+         because a full board is required to finish, so that re-hang is already owed. Sockets sum
+         to the swaps counter, and match the end-of-game circles. Zero is dim; anything else ink. */
+      const n=touches[i];
       const tx=el('text',{x:p[0],y:p[1],'text-anchor':'middle','dominant-baseline':'central',
         'font-family':'Karla,system-ui,sans-serif','font-size':'12.5','font-weight':'500',
         fill:n>0?INK:WIRE_B,'fill-opacity':n>0?'.9':'.5','pointer-events':'none',
@@ -549,17 +550,6 @@ function draw(t){
                        filter:l>0.05?'url(#bloom)':'url(#warm)'});
       nodes(stocks[type],col).forEach(function(x){cg.appendChild(x);});
       g.appendChild(cg);
-      /* the same swap count, carried onto the hung weight in blue, so a swapped hook shows its
-         number whether it holds a weight or not - the visible numbers always sum to the header.
-         Only shown above zero, so a clean first fill puts no badge on the weights (1.8.2). */
-      const sn=Math.max(0, touches[i]-1);
-      if(sn>0){
-        const tx=el('text',{x:p[0].toFixed(1),y:p[1].toFixed(1),'text-anchor':'middle','dominant-baseline':'central',
-          'font-family':'Karla,system-ui,sans-serif','font-size':'12.5','font-weight':'700',
-          fill:'#161d4a','pointer-events':'none',style:'font-variant-numeric:tabular-nums'});
-        tx.textContent=String(sn);
-        g.appendChild(tx);
-      }
     }
     layer.appendChild(g);
   }
@@ -626,9 +616,9 @@ function tapHook(i){
   if(frozen) return;                                 // a solved daily is done for the day
   if(i<0||i>=P.nh) return;
   if(lockedHooks().has(i)) return;
-  if(cur[i]!=null){ cur[i]=null; selected=null; }
-  else if(selected!=null&&used(selected)<P.cap){ cur[i]=selected; touches[i]++; selected=null;
-    if(cur.filter(function(x){return x!=null;}).length===1) logEvent('first_hang'); }
+  if(cur[i]!=null){ touches[i]++; cur[i]=null; selected=null; }   // taking a placed weight off is a swap: you must re-hang to finish, so it is already committed
+  else if(selected!=null&&used(selected)<P.cap){ const wasEmpty=cur.every(function(x){return x==null;});
+    cur[i]=selected; selected=null; if(wasEmpty) logEvent('first_hang'); }
   if(solved()) commitSolve(); else saveState();
   syncRack(); message();
 }
@@ -661,9 +651,10 @@ function commitSolve(){
   store=d; saveStore();
 }
 function streakNow(){ return NOWRITE ? 0 : (store.streak||0); }
-// The score: swaps. Hanging a weight where one already hung. Called rehangs from 1.4.7 to
-// 1.6.6; the count is unchanged, only the word (1.6.7). Exchanging two hung weights is two.
-function swaps(){ return touches.reduce(function(s,n){return s+Math.max(0,n-1);},0); }
+// The score: swaps. A swap is a weight taken off a hook (counted on removal since 1.8.3 - a full
+// board is needed to finish, so every removal is a committed re-hang). Called rehangs 1.4.7-1.6.6.
+// touches[i] is this hook's swap count; the total is their sum. Exchanging two hung weights is two.
+function swaps(){ return touches.reduce(function(s,n){return s+n;},0); }
 function solved(){ return cur.every(function(x){return x!=null;}) && P._arms.every(balanced); }
 const MON=['Jan','Feb','Mar','Apr','May','June','July','Aug','Sept','Oct','Nov','Dec'];
 function stamp(){ const t=dateForDay(DAY_NO); return MON[t.getUTCMonth()]+' '+t.getUTCDate()+' • No '+DAY_NO; }
@@ -672,7 +663,7 @@ function stamp(){ const t=dateForDay(DAY_NO); return MON[t.getUTCMonth()]+' '+t.
 function scoreLine(){ const c=swaps(), k=streakNow(); return 'Swaps: '+c+(k>=1 ? ' \u2022 Streak: '+k : ''); }
 function resultText(){ return '\u2696\ufe0f H E F T \u2696\ufe0f\n'+stamp()+'\n'+grid()+'\n'+scoreLine(); }
 function shareText(){ return resultText()+'\nhttps://heftdaily.com'; }   // what leaves the page; the on-screen card has no link. With the scheme, Messages unfurls it into a preview card
-function grid(){ return touches.map(function(n){const c=Math.max(0,n-1);
+function grid(){ return touches.map(function(c){
   return c===0?'🟢':c===1?'🟡':c===2?'🟠':'🔴';}).join(''); }
 function message(){
   const done=solved(), c=swaps();
