@@ -1,11 +1,13 @@
 # Heft — project plan (v2)
 
-**Where things stand:** **build 1.6.12**, live at heftdaily.com from GitHub via Vercel. Five
-weights on six hooks — the heavy rung, shipped alone for feedback; the four-weight bank returns
-beside it when the daily is built. 144 boards chosen for forks with lopsided ones capped at a
-third, every one clear in every reachable state. Swaps, counted in the sockets. A share sheet.
-The wordmark, the arm glow and the header were all found wrong on a phone and fixed against
-measurements. See the decision record's *Settled in the 1.6 session*.
+**Where things stand:** **build 1.8.0** — the daily is live at heftdaily.com. Five weights on
+six hooks (the heavy rung), a date-seeded board from an epoch of 15 Sept 2026 (No 1), persisted
+in `localStorage` with a streak, shared as a card with a link that unfurls. Anonymous
+aggregate logging (opened / first_hang / solved / swap histogram) writes per-day counts to
+Vercel KV via `api/event.js`; `api/stats.js` reads them behind `STATS_TOKEN`. A `?practice` URL
+gives random boards on the live build for testing. The Light (four-weight) rung is built in the
+bank's lineage but deliberately held back until there is real data on the heavy-only form; it
+returns as a second board per day when the numbers say a newcomer on-ramp is needed.
 
 Phase 1 is done in the sense that matters: the generator exists, applies the clearance rule it
 was missing, and its pools are honest. What it found reshaped the phases below — seven hooks is
@@ -29,9 +31,12 @@ geometry; the leaf floor is unaffordable at five values. The deep columns (`invi
 `sub_floor`, `confusable`) have still never been computed over a real pool — about 46,000
 states a board at six hooks and five weights — and would inform the next bank.
 
-## Phase 2 — the daily · **next**
+## Phase 2 — the daily · **done, live in 1.8.0**
 
-All of this was built once and reverted. The design is known; the work is redoing it deliberately.
+Built once in v1 and reverted; rebuilt deliberately and shipped. Date-seeded board, localStorage
+persistence with mid-board save, streak on the card from 1 up, random browse retired, the stamp is
+the day number. Decisions taken: epoch 15 Sept 2026 (No 1), streak on the card, a missed day
+resets. The items below record how it was built.
 
 **Date-seeded selection.** Board from days-since-epoch, so everyone plays the same puzzle on the
 same day. Count from the local Y-M-D read as UTC so daylight saving cannot bend the day count.
@@ -65,8 +70,10 @@ the day's board is never ambiguous. Both banks in one `boards.js`.
 The current feedback loop captures finishers and nothing else. The most valuable number is how many
 open the link and never finish a board, and it cannot be reconstructed after the fact.
 
-**Anonymous event logging.** Board opened, first weight hung, each swap, solved or abandoned.
-A Vercel serverless function writing to a simple store. Worth building before sharing widely.
+**Anonymous event logging — built (1.7.8–1.8.0).** `api/event.js` increments per-day counters in
+Vercel KV (opened / first_hang / solved / swap histogram); `api/stats.js` reads them behind
+`STATS_TOKEN`. Counts only, no id/IP. Abandonment = opened − solved. The tester questions below
+remain.
 
 **Four questions worth asking testers**, each tied to something genuinely unknown: did you work out
 what to do without being told; did you look at the arm *above* when one arm went level; did the tilt

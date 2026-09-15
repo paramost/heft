@@ -3,7 +3,7 @@
 A daily puzzle. A hanging mobile with empty hooks and a rack of weights — fill every hook so the
 whole thing hangs level. You never learn what anything weighs.
 
-**Live:** [heftdaily.com](https://heftdaily.com) · **Build:** 1.6.7 · **five weights** · **Boards:** 144, all six hooks
+**Live:** [heftdaily.com](https://heftdaily.com) · **Build:** 1.8.0 · **the daily** · **Boards:** 144, all six hooks
 
 ## How it works
 
@@ -54,11 +54,15 @@ file — which made every one-line edit expensive and every diff unreadable. The
 
 ## URL parameters
 
-All six are testing affordances. None changes the default experience.
+The default experience is the daily: a date-seeded board (No 1 = 15 Sept 2026), saved in
+`localStorage` with a streak, that everyone plays in common. The parameters below are testing
+affordances; none changes the daily, and the pins write and log nothing.
 
 | parameter | default | effect |
 |---|---|---|
-| `?board=N` | random | opens on puzzle N (1–144) instead of a random one |
+| `?practice` | — | random boards on the live build, with a Next button; writes and logs nothing |
+| `?board=N` | — | pins puzzle N (1–144); a testing pin, writes nothing |
+| `?day=N` | — | pins day number N; a testing pin, writes nothing |
 | `?tilt=N` | 1 | raises the imbalance to the power N before mapping to angle; 1 is proportional |
 | `?bow=N` | 0 | arm curve as a fraction of arm length. Straight since 1.5.5; 0.025 restores the old sag |
 | `?ink=N` | 1 | lifts the wire off the background — colour and stroke weight; 0 is the 1.4.7 drawing, 2 is the ceiling |
