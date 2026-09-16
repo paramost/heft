@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en" data-build="1.9.1">
+<html lang="en" data-build="1.9.2">
 <head>
 <meta charset="utf-8">
-<!-- Heft build 1.9.1 -->
+<!-- Heft build 1.9.2 -->
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>HEFT</title>
 <meta property="og:title" content="HEFT">
@@ -48,11 +48,13 @@
   .allow{display:flex;gap:4px}
   .allow i{width:5px;height:5px;border-radius:50%;border:1px solid rgba(120,140,200,.55)}
   .allow i.used{background:var(--rest);border-color:var(--rest)}
-  /* the rack is a scale, and this is its axis: a wedge, thin at the light end and thick at the
-     heavy end, in the weights' own colour, labelled at its ends. Vocabulary, not a hint (1.9.0);
-     drawn as a scale rather than captioned as one (1.9.1). Width is set from the stocks. */
-  .axis{display:flex;flex-direction:column;gap:4px;margin-top:4px;user-select:none}
-  .axis svg{width:100%;height:10px;display:block;overflow:visible}
+  /* the rack is a scale, and this is its axis: a bar of even thickness whose colour runs from
+     dim to the weights' own orange, labelled at its ends. Vocabulary, not a hint (1.9.0); drawn
+     rather than captioned (1.9.1); a gradient and not a wedge, because a wedge asserts a shape
+     to the scale - each step heavier by the same amount - and the game asserts no such thing;
+     a gradient says only which way is heavier (1.9.2). Width is set from the stocks. */
+  .axis{display:flex;flex-direction:column;gap:5px;margin-top:5px;user-select:none}
+  .axis svg{width:100%;height:4px;display:block;overflow:visible}
   .axlab{display:flex;justify-content:space-between;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
   footer{margin-top:14px;display:flex;gap:8px}
   .btn{background:none;border:1px solid rgba(120,132,200,.3);color:var(--dim);font-family:inherit;
@@ -80,10 +82,10 @@
 <div class="rack" id="rack"></div>
 <div class="axis" id="axis">
   <svg viewBox="0 0 100 10" preserveAspectRatio="none" aria-hidden="true">
-    <defs><linearGradient id="wedge" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#4d59a6" stop-opacity=".45"/><stop offset="1" stop-color="#c98f4a" stop-opacity=".9"/>
+    <defs><linearGradient id="axisg" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#4d59a6" stop-opacity=".35"/><stop offset="1" stop-color="#c98f4a" stop-opacity=".95"/>
     </linearGradient></defs>
-    <path d="M0 9.2 L100 0.8 L100 10 L0 10 Z" fill="url(#wedge)"/>
+    <rect x="0" y="3" width="100" height="4" rx="2" fill="url(#axisg)"/>
   </svg>
   <div class="axlab"><span>lightest</span><span>heaviest</span></div>
 </div>
@@ -96,7 +98,7 @@
 
 <script src="boards.js"></script>
 <script>
-const BUILD='1.9.1';
+const BUILD='1.9.2';
 /* the build string sits in three places so it can be read without running the page: here,
    an html attribute, and a comment in the head. Three copies can disagree, so they are
    checked against each other - a number that lies is worse than one that is hard to read. */
