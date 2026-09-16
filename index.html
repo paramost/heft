@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en" data-build="1.8.8">
+<html lang="en" data-build="1.8.9">
 <head>
 <meta charset="utf-8">
-<!-- Heft build 1.8.8 -->
+<!-- Heft build 1.8.9 -->
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>HEFT</title>
 <meta property="og:title" content="HEFT">
@@ -81,7 +81,7 @@
 
 <script src="boards.js"></script>
 <script>
-const BUILD='1.8.8';
+const BUILD='1.8.9';
 /* the build string sits in three places so it can be read without running the page: here,
    an html attribute, and a comment in the head. Three copies can disagree, so they are
    checked against each other - a number that lies is worse than one that is hard to read. */
@@ -144,15 +144,6 @@ const ORDERED=GLYPH_SETS[GLYPHS].ordered;   // lightest to heaviest, by apparent
 // circle too. The socket is a thin empty circle and the cord meets it at its edge, exactly as
 // it meets a hung weight's top.
 const CELL_TOP=GLYPH_SETS[GLYPHS].top;
-/* Where a number sits on a glyph: the centroid of its ink, not the centre of its box. The
-   triangle's mass is low and its apex narrow, the house and pentagon carry theirs under a peak,
-   so a box-centred digit rides the point or the roofline - play called it (1.8.7). Every glyph
-   is a plain polygon, so the centroid is the shoelace formula over its path, once, here. */
-const CELL_C=(function(){ const o={}; KEYS.forEach(function(k){
-  const n=CELLS[k].match(/[0-9.]+/g).map(Number), pts=[]; for(let i=0;i+1<n.length;i+=2) pts.push([n[i],n[i+1]]);
-  let a=0,cx=0,cy=0; for(let i=0;i<pts.length;i++){ const u=pts[i], v=pts[(i+1)%pts.length], w=u[0]*v[1]-v[0]*u[1];
-    a+=w; cx+=(u[0]+v[0])*w; cy+=(u[1]+v[1])*w; }
-  o[k]= a ? {x:cx/(3*a), y:cy/(3*a)} : {x:24,y:24}; }); return o; })();
 const U=22, DROP=56, HOOKDROP=30, BOW=4, R=21, S=44;
 /* The tilt range. 15 was the shipped value; 30 was measured and rejected as a staircase.
    Widening is the only lever that reduces invisible single-weight swaps (40.6% at 15 deg,
@@ -569,22 +560,12 @@ function draw(t){
       nodes(stocks[type],col).forEach(function(x){cg.appendChild(x);});
       g.appendChild(cg);
     }
-    /* The hook's swap count, under the hook - the same spot whether the hook is empty or holds a
-       weight, so the number never moves and never touches the glyph. It lived in the socket from
-       1.6.7 and, briefly, on the weight (1.8.2, 1.8.5-1.8.7): a digit inside a pointed shape
-       always looks jammed, and the header could not be reconciled with a board that only labelled
-       its empty hooks. Every hook, every moment: zero dim, anything else ink, so the row under
-       the mobile always sums to the swaps counter and reads as the share's circles do (1.8.8).
-       touches counts removals (1.8.3): the count ticks up the moment you lift a weight off -
-       honest, because a full board is required to finish, so that re-hang is already owed.
-       Sits at +31: below the weight box (+22) and inside the frame's R+44 of room. */
-    const n=touches[i];
-    const tx=el('text',{x:p[0],y:(p[1]+31).toFixed(1),'text-anchor':'middle','dominant-baseline':'central',
-      'font-family':'Karla,system-ui,sans-serif','font-size':'11.5','font-weight':'500',
-      fill:n>0?INK:WIRE_B,'fill-opacity':n>0?'.9':'.5','pointer-events':'none',
-      style:'font-variant-numeric:tabular-nums'});
-    tx.textContent=String(n);
-    g.appendChild(tx);
+    /* No per-hook count on the board (1.8.9). It lived in the socket from 1.6.7, on the weight in
+       1.8.2 and 1.8.5-1.8.7, under the hook in 1.8.8, and none of them held up in play: a digit
+       inside a pointed shape looks jammed, one beside the glyph is clutter, and a board that
+       labels only its empty hooks cannot be reconciled with the header. The score is the header's
+       total; the per-hook cost is the card's circles, revealed when the board is done. touches
+       still counts removals (1.8.3) for both. */
     layer.appendChild(g);
   }
 }

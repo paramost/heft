@@ -244,14 +244,21 @@ reading, not the odd one. Both sets shipped behind `?glyphs=` for the phone to c
 pointed set won. It stays the default; `?glyphs=flat` keeps the other. The argument was sound and
 the eye disagreed, which is the rule.
 
-**The score is swaps, counted in the sockets.** The count is what it was as "rehangs" since 1.4.7
-— hanging a weight where one already hung; zero is perfect — with two changes. The word: Dan
-could not live with "rehang". And the rule is now taught by the hook: every empty socket shows
-how many times something has hung there, which is what hanging there now will cost. A fresh
-board says 0 everywhere, a lifted weight leaves a 1 behind, and the card's circles at the end
-are a picture of those numbers. It passes the root rule — the socket says only what you did —
-and it makes the scoring explain itself without a word of instruction. Known and accepted:
-exchanging two hung weights costs two.
+**The score is swaps; the board shows no per-hook count.** The count is what it was as "rehangs"
+since 1.4.7 — a weight lifted off a hook, counted on removal since 1.8.3 because a full board
+is required to finish, so every lift is a re-hang already owed; zero is perfect. The word: Dan
+could not live with "rehang". Known and accepted: exchanging two hung weights costs two. The
+score is the header's total, and the card's circles at the end are the per-hook picture.
+
+Where the per-hook number should live was tried four ways and settled by play, in September
+2026, against the plan's own reasoning each time. In the socket (1.6.7–1.8.4): once a weight
+hangs, its hook's number vanishes into it, so the board labels only its empty hooks and cannot
+be reconciled with the header. On the weight (1.8.2, and again 1.8.5–1.8.7, at the box centre
+and then at the ink's centroid): a digit inside a pointed shape looks jammed wherever it is
+put — the triangle proved it twice. Under the hook (1.8.8): consistent, off the glyph, and
+clutter. Removed in 1.8.9. The reasoning that a number teaches the scoring was sound and the
+eye disagreed, which is the rule. If a per-hook count ever returns, it returns as a whole
+design, not a placement.
 
 **Scoring by attempts was built and set aside.** An attempt is a full board; the score is how
 many readings it took; the card is one row of arm marks per reading. It charges for the wrong
