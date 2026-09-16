@@ -1,6 +1,6 @@
 # Heft — project plan (v2)
 
-**Where things stand:** **build 1.8.0** — the daily is live at heftdaily.com. Five weights on
+**Where things stand:** **build 1.8.4** — the daily is live at heftdaily.com. Five weights on
 six hooks (the heavy rung), a date-seeded board from an epoch of 15 Sept 2026 (No 1), persisted
 in `localStorage` with a streak, shared as a card with a link that unfurls. Anonymous
 aggregate logging (opened / first_hang / solved / swap histogram) writes per-day counts to
@@ -74,6 +74,18 @@ open the link and never finish a board, and it cannot be reconstructed after the
 Vercel KV (opened / first_hang / solved / swap histogram); `api/stats.js` reads them behind
 `STATS_TOKEN`. Counts only, no id/IP. Abandonment = opened − solved. The tester questions below
 remain.
+
+**What No 1 taught (15 Sept 2026).** The pipeline was blind on launch day: `STATS_TOKEN` had
+been set for Preview and Development only, so Production answered 401 until it was added there
+and redeployed. Then three real finishes read back as one - the other two were played on the
+branch-preview URL, which was a fully working daily (persistence, streak, a card linking to
+heftdaily.com) that logged nothing because only the live hostname logged. Since 1.8.4 every
+other host writes the test namespace instead, so a tester on a preview is visible under
+`?probe=1` and cannot touch the live counts; and `vercel.json` redirects the production
+`vercel.app` alias to heftdaily.com. Read the funnel with this in mind: day 1 on the live
+site was 4 opened, 1 first hang, 1 solved. The Upstash credentials are flagged for rotation in
+the Vercel dashboard; rotate, then redeploy, then re-probe - a rotated token the function has
+not been redeployed with drops every event silently.
 
 **Four questions worth asking testers**, each tied to something genuinely unknown: did you work out
 what to do without being told; did you look at the arm *above* when one arm went level; did the tilt
@@ -205,8 +217,13 @@ which they saw first, not which is better.
 
 The bank split means a cached `boards.js` against a fresh `index.html` renders a header, an empty
 stage and the default prompt — a working-looking game with no mobile in it, and nothing on screen
-saying why. An on-screen guard when `PUZZLES` is missing is about three lines and has not been
-built. The third file, `icon-1.png`, can go stale harmlessly; a stale bank cannot.
+saying why. Since 1.8.4 the page says so - the prompt reads "The board file did not load" and
+the script stops - rather than drawing an empty stage. The third file, `icon-1.png`, can go
+stale harmlessly; a stale bank cannot.
+
+Also since 1.8.4: a saved board carries a fingerprint of the board it was made on, and a
+restore with a different fingerprint drops the board and keeps the streak. Regenerating the
+bank is therefore safe for players mid-day (deferred from the 1.8.0 review; built now).
 
 ---
 
