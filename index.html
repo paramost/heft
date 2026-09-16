@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en" data-build="1.9.2">
+<html lang="en" data-build="1.9.3">
 <head>
 <meta charset="utf-8">
-<!-- Heft build 1.9.2 -->
+<!-- Heft build 1.9.3 -->
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>HEFT</title>
 <meta property="og:title" content="HEFT">
@@ -98,7 +98,7 @@
 
 <script src="boards.js"></script>
 <script>
-const BUILD='1.9.2';
+const BUILD='1.9.3';
 /* the build string sits in three places so it can be read without running the page: here,
    an html attribute, and a comment in the head. Three copies can disagree, so they are
    checked against each other - a number that lies is worse than one that is hard to read. */
@@ -652,9 +652,9 @@ function tapHook(i){
   if(i<0||i>=P.nh) return;
   if(lockedHooks().has(i)) return;
   if(cur[i]!=null){ touches[i]++; cur[i]=null; selected=null;    // taking a placed weight off is a swap: you must re-hang to finish, so it is already committed
-    }
+    if(swaps()===1 && (store.solved||0)<3) teaching=true; }
   else if(selected!=null&&used(selected)<P.cap){ const wasEmpty=cur.every(function(x){return x==null;});
-    cur[i]=selected; selected=null; if(wasEmpty) logEvent('first_hang'); }
+    cur[i]=selected; selected=null; teaching=false; if(wasEmpty) logEvent('first_hang'); }
   if(solved()) commitSolve(); else saveState();
   syncRack(); message();
 }
@@ -704,9 +704,11 @@ function grid(){ return touches.map(function(c){
 /* Two things the interface tells rather than hides, because they are vocabulary, not correctness:
    the shapes are an ordered scale (the axis under the rack), and a swap is the unit of score.
    The root rule forbids hinting the board; it does not forbid naming the pieces (1.9.0). The
-   swap is named in orange, the counter's colour, for as long as the score reads exactly 1 - a
-   single tap was missed (1.9.1) - on a player's first few solved days, then never. It stands in
-   for the status line only; the action prompt ("Choose a hook") always wins. */
+   swap is named in orange, the counter's colour, for the length of the swap it names: from the
+   lift, through choosing a hook, until the weight is hung again - then it stops. A single tap
+   was missed (1.9.1); letting the action prompt interrupt it and then returning after the hang
+   read as if the hang were a second swap (1.9.3). On a player's first few solved days only. */
+let teaching=false;
 function message(){
   const done=solved(), c=swaps();
   // the same stamp and separator the shared result uses, so the header and the clipboard agree
@@ -730,8 +732,8 @@ function message(){
       document.getElementById('copy').classList.add('go');
     }
   }
+  else if(teaching) promptEl.innerHTML='<span style="color:var(--rest)">That&#8217;s a swap. Fewer is better.</span>';
   else if(selected!=null) promptEl.textContent='Choose a hook to hang it on.';
-  else if(c===1 && (store.solved||0)<3) promptEl.innerHTML='<span style="color:var(--rest)">That&#8217;s a swap. Fewer is better.</span>';
   else if(cur.every(function(x){return x==null;})) promptEl.textContent='Fill the hooks so the whole mobile hangs level.';
   else {
     const lev=P._arms.filter(balanced).length;
@@ -747,7 +749,7 @@ document.getElementById('build').textContent='build '+BUILD
   +(BOW_F!==0?' \u00b7 bow '+BOW_F:'')+(PIN?' \u00b7 '+PIN.label:'')+(PRACTICE?' \u00b7 practice':'')+(PRELAUNCH?' \u00b7 preview':'');
 document.getElementById('reset').onclick=function(){ if(frozen) return; var Lk=lockedHooks();
   for(var i=0;i<P.nh;i++) if(!Lk.has(i)) cur[i]=null;
-  selected=null; saveState(); syncRack(); message();};
+  selected=null; teaching=false; saveState(); syncRack(); message();};
 // "Another day" is gone: with a daily, a browse button would be a way off the day's board.
 // If the tab is left open across midnight, the next look moves to the new day.
 document.addEventListener('visibilitychange',function(){ if(!document.hidden && !PIN && !PRACTICE && dayNumber()!==rawDay) location.reload(); });
