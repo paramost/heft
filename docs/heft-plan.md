@@ -1,6 +1,6 @@
 # Heft — project plan (v2)
 
-**Where things stand:** **build 1.8.4** — the daily is live at heftdaily.com. Five weights on
+**Where things stand:** **build 1.9.4** — the daily is live at heftdaily.com. Five weights on
 six hooks (the heavy rung), a date-seeded board from an epoch of 15 Sept 2026 (No 1), persisted
 in `localStorage` with a streak, shared as a card with a link that unfurls. Anonymous
 aggregate logging (opened / first_hang / solved / swap histogram) writes per-day counts to
@@ -104,6 +104,18 @@ apparent weight, pointed tops so they hang from the cord, distinct silhouettes a
 themed (pumpkin/bat/ghost…, turkey/leaf/acorn…, tree/bell/star…). A date-driven switch could
 select the set, alongside the daily's date logic. The apparent-weight ordering is the hard part,
 as it was for the base set; measure the ink, judge on a phone.
+
+**Personal persistence — the ladder.** Everything that makes the game feel like *my* Heft is
+built from one record: `hist`, which day and how many swaps, keyed by day number, written on
+the first solve of a day since 1.9.4. Keyed by day so that two records — two tabs now, two
+devices later — merge by union with no arithmetic. It starts the day it ships and cannot be
+backfilled, which is why it shipped before anything that displays it. In order of value per
+cost: a stats panel (days solved, streaks, perfects, average swaps, a 0/1/2/3+ distribution)
+with milestones on the card; "your N swaps beat X% of today's players", from the swap
+histogram logging already collects; a transfer link (`?restore=`) that carries the record to
+another device with no server; a calendar; a next-board countdown. Live cross-device sync is
+an anonymous key mirrored to KV — a per-person record, with the size caps, abuse limits and
+privacy note that implies — held until the player count earns it. Accounts are not planned.
 
 **The practice URL is a standing feature.** `heftdaily.com/?practice` must always play random
 boards on the *current live build*, with a Next button, writing and logging nothing — a way to
