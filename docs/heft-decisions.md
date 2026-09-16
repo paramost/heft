@@ -260,6 +260,17 @@ clutter. Removed in 1.8.9. The reasoning that a number teaches the scoring was s
 eye disagreed, which is the rule. If a per-hook count ever returns, it returns as a whole
 design, not a placement.
 
+**Two teaches, no tutorial.** 1.9.0. Dan's worry after the first live days: a new player does
+not know the shapes are an ordered scale, so the opening is harder than it should be and they
+may leave before they find out; and "swaps" is not obvious. Both are vocabulary, not
+correctness — the order is carried openly by design (1.5.10) and a swap is the unit of score —
+so telling them breaks no rule; a walkthrough would, and gets skipped besides. So: a dim axis
+label under the rack, "lightest → heaviest", permanent, for the friend shown the game on
+someone else's phone and the player back after a week; and the prompt names the swap the
+first time a weight comes off a hook — "That's a swap. Fewer is better." — on a player's
+first few solved days, then never. Whether more is needed is the funnel's to say: opened to
+first hang is "did they work out what to do", first hang to solved is "did they stay".
+
 **Scoring by attempts was built and set aside.** An attempt is a full board; the score is how
 many readings it took; the card is one row of arm marks per reading. It charges for the wrong
 idea rather than for how many hooks the idea touched — which rehangs get wrong, and the record's
