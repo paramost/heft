@@ -1,6 +1,6 @@
 # Heft — project plan (v2)
 
-**Where things stand:** **build 1.10.2** — the daily is live at heftdaily.com. Five weights on
+**Where things stand:** **build 1.11.12** — the daily is live at heftdaily.com. Five weights on
 six hooks (the heavy rung), a date-seeded board from an epoch of 15 Sept 2026 (No 1), persisted
 in `localStorage` with a streak, shared as a card with a link that unfurls. Anonymous
 aggregate logging (opened / first_hang / solved / swap histogram) writes per-day counts to
@@ -112,7 +112,11 @@ devices later — merge by union with no arithmetic. It starts the day it ships 
 backfilled, which is why it shipped before anything that displays it. In order of value per
 cost: a stats panel (days solved, streaks, perfects, average swaps, a 0/1/2/3+ distribution)
 with milestones on the card; "your N swaps beat X% of today's players", from the swap
-histogram logging already collects; a calendar; a next-board countdown. The transfer shipped
+histogram logging already collects; a calendar. The countdown shipped in 1.11.0 on the result
+card - the card that replaced the share-formatted text as the on-screen result: "Level" in the
+wordmark's face over a lit level arm, Swaps and Streak, the circles, Share and My HEFT inside
+the card, the record in a line beneath, "Next board in 17m at midnight". Only a swap figure
+takes a colour, its worst hook's; the share's score line lost its colons. The transfer shipped
 in 1.10.0-1.10.2. First as a link (`?restore=` carrying the packed record, handed to the share
 sheet) - which Dan found unintuitive: texting yourself a link is a developer's mental model.
 So, a four-digit code: `api/transfer.js` parks the packed record in KV under the code for ten
