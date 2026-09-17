@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en" data-build="1.11.6">
+<html lang="en" data-build="1.11.7">
 <head>
 <meta charset="utf-8">
-<!-- Heft build 1.11.6 -->
+<!-- Heft build 1.11.7 -->
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>HEFT</title>
 <meta property="og:title" content="HEFT">
@@ -81,6 +81,7 @@
   .rtitle::before,.rtitle::after{content:'';flex:0 0 40px;height:1.5px;background:var(--lit);border-radius:1px;
           box-shadow:0 0 8px rgba(126,240,255,.8)}   /* a level beam either side, lit (1.11.3, 1.11.6) */
   .rbest b{color:var(--lit);font-weight:600}
+  .result .dot{color:var(--lit)}   /* the bullets are blue too (1.11.7) */
   .rscore{color:var(--ink);font-size:13px;line-height:22px}
   .rscore b{color:var(--lit);font-weight:600}
   .rbest{color:var(--dim);font-size:12px;line-height:20px}
@@ -157,7 +158,7 @@
 
 <script src="boards.js"></script>
 <script>
-const BUILD='1.11.6';
+const BUILD='1.11.7';
 /* the build string sits in three places so it can be read without running the page: here,
    an html attribute, and a comment in the head. Three copies can disagree, so they are
    checked against each other - a number that lies is worse than one that is hard to read. */
@@ -794,9 +795,10 @@ const MILESTONES={7:'Seven straight.',30:'Thirty straight.',100:'A hundred strai
 // the record, in one dim line under the score: the fewest swaps on any day, and the longest streak
 function bestLine(){ if(NOWRITE) return '';
   const h=store.hist||{}, v=Object.keys(h).map(function(k){ return h[k]; });
-  const parts=[]; if(v.length){ const b=Math.min.apply(null,v), t=b+' Swap'+(b===1?'':'s'); parts.push('Best '+(b===0 ? swapFig(0,t) : '<b>'+t+'</b>')); }
+  const parts=[]; if(v.length){ const b=Math.min.apply(null,v); parts.push('Best '+(b===0 ? swapFig(0,b) : '<b>'+b+'</b>')+' Swap'+(b===1?'':'s')); }   // only the figure is coloured or bold
   if(store.maxStreak) parts.push('Longest Streak <b>'+store.maxStreak+'</b>');
-  return parts.join(' \u2022 '); }
+  return parts.join(DOT); }
+const DOT=' <span class="dot">\u2022</span> ';
 // the way back: the next board arrives at local midnight, the same boundary the day number uses
 function nextLine(){ if(PIN||PRACTICE) return '';
   const t=new Date(), mid=new Date(t.getFullYear(),t.getMonth(),t.getDate()+1), ms=mid-t;
@@ -904,7 +906,7 @@ function message(){
     promptEl.innerHTML=
       '<div class="result">'+
         '<div class="rtitle">Level</div>'+
-        '<div class="rscore">Swaps '+swapFig(worstHook(),c)+(k>=1 ? ' \u2022 Streak <b>'+k+'</b>' : '')+'</div>'+
+        '<div class="rscore">Swaps '+swapFig(worstHook(),c)+(k>=1 ? DOT+'Streak <b>'+k+'</b>' : '')+'</div>'+
         (milestone() ? '<div class="smile">'+milestone()+'</div>' : '')+
         (best ? '<div class="rbest">'+best+'</div>' : '')+
         '<div class="sgrid">'+grid()+'</div>'+
