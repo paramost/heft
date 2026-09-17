@@ -1,6 +1,6 @@
 # Heft — project plan (v2)
 
-**Where things stand:** **build 1.10.0** — the daily is live at heftdaily.com. Five weights on
+**Where things stand:** **build 1.10.2** — the daily is live at heftdaily.com. Five weights on
 six hooks (the heavy rung), a date-seeded board from an epoch of 15 Sept 2026 (No 1), persisted
 in `localStorage` with a streak, shared as a card with a link that unfurls. Anonymous
 aggregate logging (opened / first_hang / solved / swap histogram) writes per-day counts to
@@ -112,9 +112,15 @@ devices later — merge by union with no arithmetic. It starts the day it ships 
 backfilled, which is why it shipped before anything that displays it. In order of value per
 cost: a stats panel (days solved, streaks, perfects, average swaps, a 0/1/2/3+ distribution)
 with milestones on the card; "your N swaps beat X% of today's players", from the swap
-histogram logging already collects; a calendar; a next-board countdown. The transfer link
-shipped in 1.10.0: My HEFT packs the record into `?restore=` and hands it to the share sheet;
-opening it elsewhere merges by day and cleans the address. A copy, not a sync. Live cross-device sync is
+histogram logging already collects; a calendar; a next-board countdown. The transfer shipped
+in 1.10.0-1.10.2. First as a link (`?restore=` carrying the packed record, handed to the share
+sheet) - which Dan found unintuitive: texting yourself a link is a developer's mental model.
+So, a four-digit code: `api/transfer.js` parks the packed record in KV under the code for ten
+minutes and hands it back once; the other device types it into My HEFT and gets "Your HEFT is
+here." over the merged record. Guesses are capped at ten a minute per address, by a hashed IP
+that expires in a minute - the only thing about a person the server ever holds, and the first
+time a player's record touches it at all: transiently, with no id. The link path remains as
+plumbing. A copy, not a sync. Live cross-device sync is
 an anonymous key mirrored to KV — a per-person record, with the size caps, abuse limits and
 privacy note that implies — held until the player count earns it. Accounts are not planned.
 

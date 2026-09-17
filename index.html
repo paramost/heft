@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en" data-build="1.10.1">
+<html lang="en" data-build="1.10.2">
 <head>
 <meta charset="utf-8">
-<!-- Heft build 1.10.1 -->
+<!-- Heft build 1.10.2 -->
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>HEFT</title>
 <meta property="og:title" content="HEFT">
@@ -89,6 +89,15 @@
   .dbar span:last-child{color:var(--ink)}
   .panel .btn{display:block;margin:14px auto 0}
   .panel #pclose{margin-top:8px}
+  /* the transfer: a four-digit code shown big, or typed in (1.10.2); and the arrival line */
+  .phere{color:var(--rest);text-align:center;font-size:13px;margin:-4px 0 10px}
+  .pcode{text-align:center;color:var(--ink);line-height:1.5;margin-top:12px}
+  .pcode b{display:block;font-size:30px;letter-spacing:.24em;color:var(--rest);font-weight:500;margin:4px 0 2px;padding-left:.24em}
+  .pform{display:flex;gap:8px;justify-content:center;align-items:center;margin-top:12px}
+  .pform .btn{margin:0}
+  .pform input{width:118px;background:none;border:1px solid rgba(160,172,230,.55);border-radius:4px;color:var(--ink);
+       font:inherit;font-size:16px;letter-spacing:.24em;text-align:center;padding:7px 0 7px .24em}
+  .pmsg{text-align:center;margin-top:10px;color:var(--dim)}
   .build{margin-top:12px;font-size:11px;color:var(--dim);opacity:.55;font-variant-numeric:tabular-nums}
   .hook{cursor:pointer}
 </style>
@@ -120,15 +129,20 @@
 <div class="veil" id="veil" hidden>
   <div class="panel" role="dialog" aria-label="My HEFT">
     <div class="ptitle">&#9878;&#65039; M Y &nbsp; H E F T &#9878;&#65039;</div>
+    <div class="phere" id="phere" hidden>Your HEFT is here.</div>
     <div id="pbody"></div>
     <button class="btn me" id="pmove">Move to another device</button>
+    <button class="btn" id="pget">Bring my HEFT here</button>
+    <div class="pcode" id="pcode" hidden></div>
+    <form class="pform" id="pform" hidden><input id="pin" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="code" autocomplete="one-time-code" aria-label="four-digit code"><button class="btn me" type="submit">Go</button></form>
+    <div class="pmsg" id="pmsg" hidden></div>
     <button class="btn" id="pclose">Close</button>
   </div>
 </div>
 
 <script src="boards.js"></script>
 <script>
-const BUILD='1.10.1';
+const BUILD='1.10.2';
 /* the build string sits in three places so it can be read without running the page: here,
    an html attribute, and a comment in the head. Three copies can disagree, so they are
    checked against each other - a number that lies is worse than one that is hard to read. */
@@ -300,10 +314,13 @@ function mergeRecord(d,r){
   d.maxStreak=Math.max(d.maxStreak||0, r.maxStreak, d.streak||0);
   d.solved=Math.max(d.solved||0, r.solved, Object.keys(d.hist).length);
   return d; }
+function takeRecord(packed){            // arriving, by link or by code: merge and keep, whatever the mode - it is the player's own act
+  const r=unpackRecord(packed); const d=mergeRecord(loadStore(), r); d.v=STORE_V;
+  try{ localStorage.setItem(KEY,JSON.stringify(d)); }catch(e){}
+  if(!NOWRITE) store=d; return d; }
 const RESTORED=(function(){
-  const m=location.search.match(/[?&]restore=([A-Za-z0-9_-]+)/); if(!m || NOWRITE) return false;
-  try{ const r=unpackRecord(m[1]); store=mergeRecord(loadStore(), r); saveStore();
-       history.replaceState(null,'',location.pathname); return true; }
+  const m=location.search.match(/[?&]restore=([A-Za-z0-9_-]+)/); if(!m) return false;
+  try{ takeRecord(m[1]); history.replaceState(null,'',location.pathname); return true; }
   catch(e){ return false; } })();
 
 /* Anonymous, aggregate-only logging (1.7.8). Each event is sent at most once per day per device
@@ -771,18 +788,36 @@ function statsHTML(){
     }).join('')+'</div>';
 }
 (function(){
-  const veil=document.getElementById('veil');
-  function open(){ document.getElementById('pbody').innerHTML=statsHTML(); veil.hidden=false; }
-  function close(){ veil.hidden=true; }
-  document.getElementById('stats').onclick=open;
-  document.getElementById('pclose').onclick=close;
-  document.getElementById('pmove').onclick=function(){
-    const b=this, url=location.origin+'/?restore='+packRecord(loadStore());   // this site, whichever it is: the preview transfers to the preview
-    if(navigator.share){ navigator.share({title:'HEFT', text:'Open this on your other device to bring your HEFT along.', url:url})
-      .then(function(){ b.textContent='Sent'; }).catch(function(){}); }
-    else if(navigator.clipboard){ navigator.clipboard.writeText(url).then(function(){ b.textContent='Link copied'; }).catch(function(){}); }
+  const veil=document.getElementById('veil'), $=function(id){ return document.getElementById(id); };
+  let arrived=RESTORED;
+  function open(){ $('pbody').innerHTML=statsHTML(); $('phere').hidden=!arrived;
+    $('pmove').hidden=false; $('pget').hidden=false; $('pcode').hidden=true; $('pform').hidden=true; $('pmsg').hidden=true;
+    $('pmove').disabled=false; veil.hidden=false; }
+  function close(){ veil.hidden=true; arrived=false; }
+  function say(t){ $('pmsg').textContent=t; $('pmsg').hidden=false; }
+  $('stats').onclick=open;
+  $('pclose').onclick=close;
+  /* Leaving: the record is parked on the server under a four-digit code for ten minutes, and
+     the code is shown big. Arriving: the code is typed in, the record comes back once, and the
+     panel re-renders on the merged record under "Your HEFT is here." (1.10.2). */
+  $('pmove').onclick=function(){
+    const b=this; b.disabled=true;
+    fetch('/api/transfer',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rec:packRecord(loadStore())})})
+      .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
+      .then(function(j){ $('pmove').hidden=true; $('pget').hidden=true;
+        $('pcode').innerHTML='On your other device, open My HEFT, tap <i>Bring my HEFT here</i>, and enter<b>'+j.code+'</b>Good for ten minutes.';
+        $('pcode').hidden=false; })
+      .catch(function(){ b.disabled=false; say('Could not get a code just now. Try again.'); });
   };
-  if(RESTORED) open();                       // arriving: the merged record is the confirmation
+  $('pget').onclick=function(){ $('pmove').hidden=true; $('pget').hidden=true; $('pform').hidden=false; $('pin').value=''; $('pin').focus(); };
+  $('pform').onsubmit=function(e){ e.preventDefault();
+    const code=$('pin').value.trim(); if(!/^[0-9]{4}$/.test(code)){ say('Four digits.'); return; }
+    fetch('/api/transfer?code='+code,{cache:'no-store'})
+      .then(function(r){ return r.ok ? r.json() : Promise.reject(r.status); })
+      .then(function(j){ takeRecord(j.rec); arrived=true; open(); message(); })
+      .catch(function(st){ say(st===429 ? 'Too many tries. Wait a minute.' : 'That code did not work. Codes last ten minutes and work once.'); });
+  };
+  if(RESTORED) open();                       // arriving by link: the panel opens under "Your HEFT is here." 
   veil.addEventListener('click',function(e){ if(e.target===veil) close(); });
   document.addEventListener('keydown',function(e){ if(e.key==='Escape') close(); });
 })();
