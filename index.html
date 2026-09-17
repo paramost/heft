@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en" data-build="1.11.11">
+<html lang="en" data-build="1.11.12">
 <head>
 <meta charset="utf-8">
-<!-- Heft build 1.11.11 -->
+<!-- Heft build 1.11.12 -->
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>HEFT</title>
 <meta property="og:title" content="HEFT">
@@ -164,7 +164,7 @@
 
 <script src="boards.js"></script>
 <script>
-const BUILD='1.11.11';
+const BUILD='1.11.12';
 /* the build string sits in three places so it can be read without running the page: here,
    an html attribute, and a comment in the head. Three copies can disagree, so they are
    checked against each other - a number that lies is worse than one that is hard to read. */
@@ -802,8 +802,8 @@ const MILESTONES={7:'Seven straight.',30:'Thirty straight.',100:'A hundred strai
 const LEVEL_ARM='<svg class="rarm" viewBox="0 0 190 14" aria-hidden="true">'
   +'<defs><linearGradient id="larm" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#7ef0ff" stop-opacity="0"/><stop offset=".12" stop-color="#7ef0ff"/><stop offset=".88" stop-color="#7ef0ff"/><stop offset="1" stop-color="#7ef0ff" stop-opacity="0"/></linearGradient>'
   +'<filter id="lglow" x="-10%" y="-200%" width="120%" height="500%"><feGaussianBlur stdDeviation="1.8"/></filter></defs>'
-  +'<line x1="10" y1="7" x2="180" y2="7" stroke="#7ef0ff" stroke-width="3" opacity=".55" filter="url(#lglow)"/>'
-  +'<line x1="10" y1="7" x2="180" y2="7" stroke="url(#larm)" stroke-width="1.6"/>'
+  +'<rect x="10" y="5.5" width="170" height="3" rx="1.5" fill="#7ef0ff" opacity=".55" filter="url(#lglow)"/>'   // rects, not lines: a line's bounding box has no height, and a gradient or filter on it draws nothing
+  +'<rect x="10" y="6.2" width="170" height="1.6" rx=".8" fill="url(#larm)"/>'
   +'<g fill="#7ef0ff" opacity=".75"><circle cx="45" cy="7" r="1.1"/><circle cx="70" cy="7" r="1.1"/><circle cx="120" cy="7" r="1.1"/><circle cx="145" cy="7" r="1.1"/></g>'
   +'<circle cx="95" cy="7" r="2.4" fill="#7ef0ff"/>'
   +'<circle cx="10" cy="7" r="3" fill="none" stroke="#7ef0ff" stroke-width="1.2"/><circle cx="180" cy="7" r="3" fill="none" stroke="#7ef0ff" stroke-width="1.2"/>'
