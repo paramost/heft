@@ -32,7 +32,7 @@ back beside it when the daily is built.
   generator; `select.py` runs it on any pool that skipped it.
 - `tools/select.py` — picks a bank from a pool by score: forks count, repeats of a shape are
   discounted, lopsided boards are capped.
-- `tools/icon.py` — draws `icon-1.png`, the icon a link preview shows.
+- `tools/icon.py` — draws `icon-2.png`, the icon a link preview shows.
 - `docs/` — decision record, project plan, generation spec, publishing notes.
 
 - `vercel.json` — one header rule: `Cache-Control: public, max-age=0, must-revalidate` on every

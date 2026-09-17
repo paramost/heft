@@ -222,7 +222,7 @@ which they saw first, not which is better.
 
 - `index.html` — the game
 - `boards.js` — the 144-board bank, one board per line
-- `icon-1.png` — the apple-touch-icon a link preview shows; drawn by `tools/icon.py`
+- `icon-2.png` — the apple-touch-icon a link preview shows; drawn by `tools/icon.py`
 - `tools/generate.py` — the board generator. Python 3, standard library only
 - `tools/clearance.py` — hooks apart, nothing crossing, in every reachable state
 - `tools/select.py` — picks a bank from a pool by score
@@ -241,7 +241,7 @@ which they saw first, not which is better.
 The bank split means a cached `boards.js` against a fresh `index.html` renders a header, an empty
 stage and the default prompt — a working-looking game with no mobile in it, and nothing on screen
 saying why. Since 1.8.4 the page says so - the prompt reads "The board file did not load" and
-the script stops - rather than drawing an empty stage. The third file, `icon-1.png`, can go
+the script stops - rather than drawing an empty stage. The third file, `icon-2.png`, can go
 stale harmlessly; a stale bank cannot.
 
 Also since 1.8.4: a saved board carries a fingerprint of the board it was made on, and a
