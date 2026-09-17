@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en" data-build="1.10.2">
+<html lang="en" data-build="1.10.3">
 <head>
 <meta charset="utf-8">
-<!-- Heft build 1.10.2 -->
+<!-- Heft build 1.10.3 -->
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>HEFT</title>
 <meta property="og:title" content="HEFT">
@@ -75,7 +75,7 @@
   .prompt .smile{font-size:13px;color:var(--rest);line-height:22px}   /* a streak milestone, the day it lands (1.9.5) */
   /* My Heft: the personal record, over the stage. Built from hist and nothing else (1.9.5). */
   .veil{position:fixed;inset:0;z-index:20;background:rgba(4,5,15,.78);display:flex;align-items:center;justify-content:center;padding:16px}
-  .veil[hidden]{display:none}
+  [hidden]{display:none!important}   /* the attribute wins over any display rule: the panel shows and hides its parts with it */
   .panel{width:100%;max-width:300px;background:var(--b2);border:1px solid rgba(120,132,200,.35);border-radius:14px;padding:18px 20px 16px;color:var(--dim);font-size:13px}
   .panel .ptitle{font-size:13px;letter-spacing:.14em;color:var(--ink);font-weight:500;text-align:center;margin-bottom:12px}
   .prow{display:flex;justify-content:space-between;line-height:24px;font-variant-numeric:tabular-nums}
@@ -142,7 +142,7 @@
 
 <script src="boards.js"></script>
 <script>
-const BUILD='1.10.2';
+const BUILD='1.10.3';
 /* the build string sits in three places so it can be read without running the page: here,
    an html attribute, and a comment in the head. Three copies can disagree, so they are
    checked against each other - a number that lies is worse than one that is hard to read. */
