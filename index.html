@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en" data-build="1.11.0">
+<html lang="en" data-build="1.11.1">
 <head>
 <meta charset="utf-8">
-<!-- Heft build 1.11.0 -->
+<!-- Heft build 1.11.1 -->
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>HEFT</title>
 <meta property="og:title" content="HEFT">
@@ -68,6 +68,7 @@
   /* My HEFT in the weights' orange: seen, but as part of the game, not a control shouting (1.9.8) */
   .btn.me{color:var(--rest);border-color:rgba(201,143,74,.6);background:rgba(201,143,74,.08)}
   .btn.me:active{background:rgba(201,143,74,.2)}
+  .btn .ico{vertical-align:-2px;margin-left:7px}   /* the share glyph, right of the word (1.11.1) */
     /* four lines on one 22px pitch, the emoji row included, so the block reads as a stack */
   /* The result card (1.11.0): the score, the record, the circles, the actions and the way back -
      one card, in the game's own words. The share-formatted card lives only in the share now. */
@@ -129,9 +130,9 @@
   <div class="axlab"><span>lightest</span><span>heaviest</span></div>
 </div>
 <footer>
+  <button class="btn" id="copy" style="display:none">Share <svg class="ico" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="M8 7l4-4 4 4"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg></button>
   <button class="btn me" id="stats">My HEFT</button>
   <button class="btn" id="next" style="display:none">Next board</button>
-  <button class="btn" id="copy" style="display:none">Share</button>
 </footer>
 <div class="build" id="build"></div>
 <div class="veil" id="veil" hidden>
@@ -150,7 +151,7 @@
 
 <script src="boards.js"></script>
 <script>
-const BUILD='1.11.0';
+const BUILD='1.11.1';
 /* the build string sits in three places so it can be read without running the page: here,
    an html attribute, and a comment in the head. Three copies can disagree, so they are
    checked against each other - a number that lies is worse than one that is hard to read. */
@@ -881,7 +882,7 @@ function message(){
   rack.hidden=frozen; axisEl.hidden=frozen;    // a frozen day has nothing left to pick from
   if(!done){                                   // taking a weight back off retires the result
     const cb=document.getElementById('copy');
-    cb.style.display='none'; cb.classList.remove('go'); cb.textContent=shareLabel();
+    cb.style.display='none'; cb.classList.remove('go'); setShare(shareLabel());
     stopCountdown();
   }
   if(done){
@@ -929,17 +930,19 @@ if(PRACTICE){ const nx=document.getElementById('next'); nx.style.display=''; nx.
    else - which is as close as a page is allowed to get to "open Messages and paste". Where
    there is no sheet (desktop), the button copies instead. Same text either way (1.6.8). */
 function shareLabel(){ return 'Share'; }   // one word everywhere (1.9.9); without a share sheet it copies, and says Copied
+const SHARE_ICON='<svg class="ico" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="M8 7l4-4 4 4"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>';
+function setShare(t){ document.getElementById('copy').innerHTML=t+' '+SHARE_ICON; }
 document.getElementById('copy').onclick=function(){
   const cb=document.getElementById('copy');
   if(navigator.share){
     // the card goes to the clipboard too: Chrome on iOS has been seen handing Messages only the
     // page link, and a paste should work whatever the sheet did
     if(navigator.clipboard) navigator.clipboard.writeText(shareText()).catch(function(){});
-    navigator.share({title:'HEFT',text:shareText()}).then(function(){ cb.textContent='Shared'; })
+    navigator.share({title:'HEFT',text:shareText()}).then(function(){ setShare('Shared'); })
       .catch(function(){});                       // the sheet was dismissed; say nothing
   } else {
     if(navigator.clipboard) navigator.clipboard.writeText(shareText());
-    cb.textContent='Copied';
+    setShare('Copied');
   }};
 function boardPoint(ev){
   const cx=('clientX' in ev)?ev.clientX:(ev.touches&&ev.touches[0]?ev.touches[0].clientX:0);
