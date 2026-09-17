@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en" data-build="1.11.10">
+<html lang="en" data-build="1.11.11">
 <head>
 <meta charset="utf-8">
-<!-- Heft build 1.11.10 -->
+<!-- Heft build 1.11.11 -->
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>HEFT</title>
 <meta property="og:title" content="HEFT">
@@ -76,10 +76,12 @@
      and every figure that has no scale colour is that blue. Green is the share's, not the card's (1.11.6) */
   .result{display:block;width:100%;max-width:320px;text-align:center;border:1px solid rgba(126,240,255,.3);
           background:rgba(126,240,255,.05);border-radius:14px;padding:14px 18px 12px}
-  .rtitle{color:var(--lit);font-size:16px;font-weight:500;letter-spacing:.06em;line-height:22px;
-          display:flex;align-items:center;justify-content:center;gap:12px;text-shadow:0 0 10px rgba(126,240,255,.55)}
-  .rtitle::before,.rtitle::after{content:'';flex:0 0 40px;height:1.5px;background:var(--lit);border-radius:1px;
-          box-shadow:0 0 8px rgba(126,240,255,.8)}   /* a level beam either side, lit (1.11.3, 1.11.6) */
+  /* "Level" in the wordmark's face over a lit level arm - the board's own beam, drawn as a solved
+     arm is: glow, lever dots, end sockets, the pivot at centre (1.11.11) */
+  .rtitle{display:flex;flex-direction:column;align-items:center;gap:2px;margin-bottom:6px}
+  .rword{font-family:'Archivo Black',serif;font-size:18px;letter-spacing:.2em;padding-left:.2em;color:var(--lit);line-height:24px;
+         text-shadow:0 0 12px rgba(126,240,255,.55)}
+  .rarm{width:190px;height:14px;display:block;overflow:visible}
   .rbest b{color:var(--lit);font-weight:600}
   .result .dot{color:var(--lit)}   /* the bullets are blue too (1.11.7) */
   .rscore{color:var(--ink);font-size:13px;line-height:22px}
@@ -162,7 +164,7 @@
 
 <script src="boards.js"></script>
 <script>
-const BUILD='1.11.10';
+const BUILD='1.11.11';
 /* the build string sits in three places so it can be read without running the page: here,
    an html attribute, and a comment in the head. Three copies can disagree, so they are
    checked against each other - a number that lies is worse than one that is hard to read. */
@@ -796,6 +798,16 @@ function streakNow(){ return NOWRITE ? 0 : (store.streak||0); }
    come from hist (1.9.4), so they cover the days since it began. A milestone is one line on the
    on-screen card the day a streak lands on it - not on the share, which stays as designed. */
 const MILESTONES={7:'Seven straight.',30:'Thirty straight.',100:'A hundred straight.',365:'A year straight.'};
+// the level arm under the word: end sockets, lever dots, a pivot, and the solved glow
+const LEVEL_ARM='<svg class="rarm" viewBox="0 0 190 14" aria-hidden="true">'
+  +'<defs><linearGradient id="larm" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#7ef0ff" stop-opacity="0"/><stop offset=".12" stop-color="#7ef0ff"/><stop offset=".88" stop-color="#7ef0ff"/><stop offset="1" stop-color="#7ef0ff" stop-opacity="0"/></linearGradient>'
+  +'<filter id="lglow" x="-10%" y="-200%" width="120%" height="500%"><feGaussianBlur stdDeviation="1.8"/></filter></defs>'
+  +'<line x1="10" y1="7" x2="180" y2="7" stroke="#7ef0ff" stroke-width="3" opacity=".55" filter="url(#lglow)"/>'
+  +'<line x1="10" y1="7" x2="180" y2="7" stroke="url(#larm)" stroke-width="1.6"/>'
+  +'<g fill="#7ef0ff" opacity=".75"><circle cx="45" cy="7" r="1.1"/><circle cx="70" cy="7" r="1.1"/><circle cx="120" cy="7" r="1.1"/><circle cx="145" cy="7" r="1.1"/></g>'
+  +'<circle cx="95" cy="7" r="2.4" fill="#7ef0ff"/>'
+  +'<circle cx="10" cy="7" r="3" fill="none" stroke="#7ef0ff" stroke-width="1.2"/><circle cx="180" cy="7" r="3" fill="none" stroke="#7ef0ff" stroke-width="1.2"/>'
+  +'</svg>';
 // the record, in one dim line under the score: the fewest swaps on any day, and the longest streak
 function bestLine(){ if(NOWRITE) return '';
   const h=store.hist||{}, v=Object.keys(h).map(function(k){ return h[k]; });
@@ -909,7 +921,7 @@ function message(){
     const k=streakNow(), best=bestLine(), next=nextLine();
     promptEl.innerHTML=
       '<div class="result">'+
-        '<div class="rtitle">Level</div>'+
+        '<div class="rtitle"><span class="rword">Level</span>'+LEVEL_ARM+'</div>'+
         '<div class="rscore">Swaps '+swapFig(worstHook(),c)+(k>=1 ? DOT+'Streak <b>'+k+'</b>' : '')+'</div>'+
         (milestone() ? '<div class="smile">'+milestone()+'</div>' : '')+
         '<div class="sgrid">'+grid()+'</div>'+
