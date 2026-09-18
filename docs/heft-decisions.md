@@ -276,6 +276,17 @@ days, then never. It was one tap's worth in 1.9.0 and was missed. Whether more i
 funnel's to say: opened to first hang is "did they work out what to do", first hang to solved
 is "did they stay".
 
+**Notes under the weights, off by default.** 1.12.0. A player who works the weights out on
+paper asked for a small field under each weight to write a number in. It passes the root rule
+without strain: the field holds what the player wrote, and the game never reads it, checks it
+or colours it - a scratchpad, not a hint. It is also a signal about the audience. Built as a
+short free-text field (a guess, a range, a question mark) under each stock, saved with the
+day's board and cleared with the next one, never in the share, and shown only when a "Notes
+under the weights" toggle in My HEFT is on - a preference kept with the record and carried by
+a transfer - because the same five boxes that help one player are noise to another, and the
+rack is the one part of the screen that has stayed perfectly clean. 16px text: iOS zooms the
+page on focusing anything smaller.
+
 **Scoring by attempts was built and set aside.** An attempt is a full board; the score is how
 many readings it took; the card is one row of arm marks per reading. It charges for the wrong
 idea rather than for how many hooks the idea touched — which rehangs get wrong, and the record's
