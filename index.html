@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en" data-build="1.12.6">
+<html lang="en" data-build="1.12.7">
 <head>
 <meta charset="utf-8">
-<!-- Heft build 1.12.6 -->
+<!-- Heft build 1.12.7 -->
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>HEFT</title>
 <meta property="og:title" content="HEFT">
@@ -60,7 +60,7 @@
   .notes input{width:44px;margin:0 4px;box-sizing:border-box;background:none;border:0;border-radius:0;outline:none;
        border-bottom:1px solid rgba(160,172,230,.45);color:var(--ink);font:inherit;font-size:16px;text-align:center;padding:1px 2px 2px}
   .notes input:focus{border-bottom:1px solid var(--lit)}
-  .ptog{cursor:pointer;margin-top:12px;padding-top:10px;border-top:1px solid rgba(120,132,200,.2);line-height:32px}   /* a little air between the switches (1.12.6) */
+  .ptog{cursor:pointer;margin-top:12px;padding-top:10px;border-top:1px solid rgba(120,132,200,.2);line-height:44px}   /* a thumb's height apart: two switches on a phone (1.12.7) */
   .ptog input{appearance:none;-webkit-appearance:none;width:34px;height:20px;border-radius:10px;background:rgba(120,132,200,.35);
        position:relative;margin:2px 0;cursor:pointer;vertical-align:middle;flex:0 0 auto}
   .ptog input::before{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--ink);transition:left .15s}
@@ -186,7 +186,7 @@
 
 <script src="boards.js"></script>
 <script>
-const BUILD='1.12.6';
+const BUILD='1.12.7';
 /* the build string sits in three places so it can be read without running the page: here,
    an html attribute, and a comment in the head. Three copies can disagree, so they are
    checked against each other - a number that lies is worse than one that is hard to read. */
