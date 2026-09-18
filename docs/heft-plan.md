@@ -1,6 +1,6 @@
 # Heft — project plan (v2)
 
-**Where things stand:** **build 1.12.1** — the daily is live at heftdaily.com. Five weights on
+**Where things stand:** **build 1.12.3** — the daily is live at heftdaily.com. Five weights on
 six hooks (the heavy rung), a date-seeded board from an epoch of 15 Sept 2026 (No 1), persisted
 in `localStorage` with a streak, shared as a card with a link that unfurls. Anonymous
 aggregate logging (opened / first_hang / solved / swap histogram) writes per-day counts to
@@ -129,8 +129,13 @@ an anonymous key mirrored to KV — a per-person record, with the size caps, abu
 privacy note that implies — held until the player count earns it. Accounts are not planned.
 
 **The practice URL is a standing feature.** `heftdaily.com/?practice` must always play random
-boards on the *current live build*, with a Next button, writing and logging nothing — a way to
-test the shipped game without touching the daily or its data. Preserve it through future builds.
+boards on the *current live build*, writing and logging nothing — a way to test the shipped
+game without touching the daily or its data. Preserve it through future builds. Since 1.12.3:
+a Random board button and a Board # field beside it; the header reads "Practice • Board N",
+never the daily's date and number; and `heftdaily.com/practice` is the form to paste into a
+text — a static page carrying an orange icon and a "HEFT · practice" title for the link card
+(a card is read from the HTML a URL returns, and a query string cannot change it) which sends
+a browser on to `/?practice`.
 
 **Reclaim the 43-unit side pad.** The only lever that makes the mobile bigger — ×1.11 at 22 units,
 ×1.17 at 10 — since 141 of 144 boards are width-limited. The pad exists so a hook's tap zone stays

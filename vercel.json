@@ -3,16 +3,25 @@
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
       ]
     }
   ],
   "redirects": [
     {
       "source": "/(.*)",
-      "has": [ { "type": "host", "value": "heft-dwcarey-1768s-projects.vercel.app" } ],
+      "has": [
+        {
+          "type": "host",
+          "value": "heft-dwcarey-1768s-projects.vercel.app"
+        }
+      ],
       "destination": "https://heftdaily.com/$1",
       "permanent": true
     }
-  ]
+  ],
+  "cleanUrls": true
 }

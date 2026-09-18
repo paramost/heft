@@ -14,8 +14,9 @@ preview per URL.
 import struct, sys, zlib
 
 SIZE, SS = 180, 4                       # output pixels, supersample factor
-# the header blue behind the ink; --test swaps it for the weight orange, so a branch preview's
-# link card reads orange in Messages and cannot be mistaken for the live game.
+# the header blue behind the ink; --test swaps it for the weight orange - the practice page's
+# icon (icon-practice.png), so a link to /practice reads orange in Messages and cannot be
+# mistaken for the daily.
 BG, INK = (0x16, 0x1d, 0x4a), (0xdf, 0xe6, 0xff)
 TEST_BG = (0xc9, 0x8f, 0x4a)
 # the H, in the favicon's 32-unit space: two stems and a crossbar, at full ink; and the cord,
@@ -58,6 +59,6 @@ def png(rows):
 if __name__ == "__main__":
     args = [a for a in sys.argv[1:] if a != "--test"]
     test = "--test" in sys.argv
-    out = args[0] if args else ("icon-test.png" if test else "icon-2.png")
+    out = args[0] if args else ("icon-practice.png" if test else "icon-2.png")
     open(out, "wb").write(png(render(TEST_BG if test else BG)))
     print("wrote", out)
