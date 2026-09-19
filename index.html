@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en" data-build="1.12.10">
+<html lang="en" data-build="1.12.11">
 <head>
 <meta charset="utf-8">
-<!-- Heft build 1.12.10 -->
+<!-- Heft build 1.12.11 -->
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>HEFT</title>
 <meta property="og:title" content="HEFT">
@@ -186,7 +186,7 @@
 
 <script src="boards.js"></script>
 <script>
-const BUILD='1.12.10';
+const BUILD='1.12.11';
 /* the build string sits in three places so it can be read without running the page: here,
    an html attribute, and a comment in the head. Three copies can disagree, so they are
    checked against each other - a number that lies is worse than one that is hard to read. */
@@ -356,7 +356,7 @@ function mergeRecord(d,r){
   d.hist=d.hist||{}; Object.keys(r.hist).forEach(function(k){ d.hist[k] = (k in d.hist) ? Math.min(d.hist[k], r.hist[k]) : r.hist[k]; });
   if(r.lastSolved>(d.lastSolved||0) || (r.lastSolved===(d.lastSolved||0) && r.streak>(d.streak||0))){ d.lastSolved=r.lastSolved; d.streak=r.streak; }
   d.maxStreak=Math.max(d.maxStreak||0, r.maxStreak, d.streak||0);
-  d.solved=Math.max(d.solved||0, r.solved, Object.keys(d.hist).length);
+  d.solved=Math.max(d.solved||0, r.solved, Object.keys(d.hist).length, d.streak||0);   // and never below the streak (1.12.11)
   d.notesOn=!!(d.notesOn||r.notesOn); d.scaleOff=!!(d.scaleOff||r.scaleOff);
   return d; }
 function takeRecord(packed){            // arriving, by link or by code: merge and keep, whatever the mode - it is the player's own act
@@ -818,6 +818,10 @@ function commitSolve(){
   // and how many days have been solved. Kept even with nothing showing them yet (1.7.6).
   d.maxStreak=Math.max(d.maxStreak||0, d.streak);
   d.solved=(d.solved||0)+1;
+  // a streak of N proves at least N solves, and so does a history of N days: solved can never sit
+  // below either. Seen in the wild on 19 Sept 2026 - a record with streak 5 and solved 4, one day
+  // uncounted before the history began - and this heals it on the next solve (1.12.11).
+  d.solved=Math.max(d.solved, d.streak||0, Object.keys(d.hist||{}).length+1);
   // and, from 1.9.4, the day itself: which day, how many swaps. Keyed by day number so that two
   // records - two tabs now, two devices later - merge by union with no arithmetic. Everything
   // personal (a stats panel, perfects, milestones, a calendar, a transfer link) is built from
