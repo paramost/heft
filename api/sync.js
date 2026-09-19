@@ -34,14 +34,22 @@ module.exports = async function handler(req, res) {
     }
     if (req.method === 'POST') {
       let b = req.body; if (typeof b === 'string') { try { b = JSON.parse(b); } catch (e) { b = {}; } } b = b || {};
-      const key = String(b.key || ''), rec = b.rec;
+      const key = String(b.key || ''), rec = b.rec, dev = R.HEX32.test(String(b.dev || '')) ? String(b.dev) : '';
       if (!R.HEX32.test(key)) return json(400, { error: 'bad key' });
-      if (typeof rec !== 'string' || rec.length < 8 || rec.length > 4096 || !/^[A-Za-z0-9_-]+$/.test(rec)) return json(400, { error: 'bad record' });
-      let incoming; try { incoming = R.unpack(rec); } catch (e) { return json(400, { error: 'bad record' }); }
       const got = await kv([['GET', 's:' + key]]);
       let held = null; if (got[0]) { try { held = R.unpack(got[0]); } catch (e) { held = null; } }
+      if (b.leave === true) {                       // a device unlinking: off the count, record otherwise untouched
+        if (!held) return json(404, { error: 'no record' });
+        held.devices = (held.devices || []).filter(function (x) { return x !== dev; });
+        const packedL = R.pack(held); await kv([['SET', 's:' + key, packedL, 'EX', String(TTL)]]);
+        return json(200, { rec: packedL });
+      }
+      if (typeof rec !== 'string' || rec.length < 8 || rec.length > 4096 || !/^[A-Za-z0-9_-]+$/.test(rec)) return json(400, { error: 'bad record' });
+      let incoming; try { incoming = R.unpack(rec); } catch (e) { return json(400, { error: 'bad record' }); }
       const merged = held ? R.merge(held, incoming) : incoming;
       merged.key = key;
+      merged.devices = merged.devices || [];        // the writing device joins the count
+      if (dev && merged.devices.indexOf(dev) < 0 && merged.devices.length < 10) merged.devices.push(dev);
       const packed = R.pack(merged);
       if (packed.length > 4096) return json(413, { error: 'record too large' });
       await kv([['SET', 's:' + key, packed, 'EX', String(TTL)]]);
