@@ -1040,7 +1040,7 @@ function message(){
         (next ? '<div class="rnext" id="rnext">'+next+'</div>' : '')+
       '</div>';
     document.getElementById('rfoot').appendChild(foot);
-    if(!PRACTICE){                        // a practice result is a random board, not the daily - don't offer to share it
+    if(!PRACTICE && !stands){             // a practice result is a random board, not the daily; a result that did not stand is not this device's to share
       document.getElementById('copy').style.display='';
       document.getElementById('copy').classList.add('go');
     }

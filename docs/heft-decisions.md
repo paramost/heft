@@ -287,6 +287,29 @@ a transfer - because the same five boxes that help one player are noise to anoth
 rack is the one part of the screen that has stayed perfectly clean. 16px text: iOS zooms the
 page on focusing anything smaller.
 
+**The record follows the player: anonymous-key sync.** 1.13.0, 19 Sept 2026. Stats broke for
+anyone who played on more than one device - and on iOS one phone is three storages (Safari, the
+Messages browser, a home-screen icon), so it broke for the ordinary way of playing a daily from
+a text. The transfer code (1.10.2) merged a copy; devices drifted apart the next day. Now the
+record gets a random 128-bit key on its first solve and is mirrored on the server under it; a
+device with the key reads on open and on return to the foreground and writes after a solve, a
+preference change, or a link; both sides merge, so nothing is overwritten, only folded in.
+Linking is the same four-digit code, but the receiver adopts the key. The posture change,
+taken knowingly: a per-person record kept on the server for as long as they play - anonymous,
+under 4KB, expiring 400 days after the last write, with a plain line in My HEFT saying so.
+
+Two rules were settled in the design and are worth keeping to. *The first solve of a day
+stands*: a second device solving a solved day changes nothing, its card says so, and it does
+not get a Share - Dan asked whether a player could open a solved day elsewhere for a better
+score, and "keep the better" would have been exactly that. *The base record stands on every
+tie*: history is a union keyed by day (the shape chosen in 1.9.4 for this reason), the streak
+follows the later last-solved day and continues when the days join, preferences follow the
+newer change, the board follows the later day, then the finished one, then the one further
+along. Solving is idempotent per day, which also closes the double-count the 1.8.3 migration
+had opened. The limit, stated plainly: two storages cannot find each other without an
+identity, so the Messages-versus-Safari split still needs one link - once, instead of a copy
+every day.
+
 **Scoring by attempts was built and set aside.** An attempt is a full board; the score is how
 many readings it took; the card is one row of arm marks per reading. It charges for the wrong
 idea rather than for how many hooks the idea touched — which rehangs get wrong, and the record's
