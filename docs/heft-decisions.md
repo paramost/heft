@@ -287,6 +287,19 @@ a transfer - because the same five boxes that help one player are noise to anoth
 rack is the one part of the screen that has stayed perfectly clean. 16px text: iOS zooms the
 page on focusing anything smaller.
 
+**The stats are the history, and nothing else.** 1.14.0, 19 Sept 2026. Three counters -
+streak, longest streak, solved - had been kept beside the day-by-day history since 1.7.6 and
+written in the same place, and still they drifted: a record with a streak of 5 and a count of
+4 turned up on the second day of sync, and every fix on offer was a way of reasoning the two
+back together. Dan: "I don't want to reason stats. I want accurate stats." So the counters
+are gone. `hist` - which day, how many swaps - is the whole record; solved is the number of
+days in it, the streak is the run ending today or yesterday, the longest streak is the
+longest run, and a merge is a union of days. A stat computed from the history is a fact and
+cannot drift. The price, paid knowingly at a dozen players and five days in rather than
+later: days before the history began - No 1 for everyone, No 2 for anyone who solved it
+before the evening of 16 Sept - are not counted, and cannot be. A full reset would have
+bought the same accuracy at the cost of three more days, so it was not taken.
+
 **The record follows the player: anonymous-key sync.** 1.13.0, 19 Sept 2026. Stats broke for
 anyone who played on more than one device - and on iOS one phone is three storages (Safari, the
 Messages browser, a home-screen icon), so it broke for the ordinary way of playing a daily from

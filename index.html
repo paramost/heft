@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en" data-build="1.13.0">
+<html lang="en" data-build="1.14.0">
 <head>
 <meta charset="utf-8">
-<!-- Heft build 1.13.0 -->
+<!-- Heft build 1.14.0 -->
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>HEFT</title>
 <meta property="og:title" content="HEFT">
@@ -191,7 +191,7 @@
 
 <script src="boards.js"></script>
 <script>
-const BUILD='1.13.0';
+const BUILD='1.14.0';
 /* the build string sits in three places so it can be read without running the page: here,
    an html attribute, and a comment in the head. Three copies can disagree, so they are
    checked against each other - a number that lies is worse than one that is hard to read. */
@@ -332,13 +332,27 @@ const PRELAUNCH = !PIN && !PRACTICE && rawDay < 1;
 const DAY_NO = PIN ? PIN.dayNo : (PRELAUNCH ? 1 : rawDay);   // preview shows No 1
 const NOWRITE = !!PIN || PRACTICE || PRELAUNCH;              // only the real daily persists and logs
 
-const KEY='heft', STORE_V=2;
+const KEY='heft', STORE_V=3;
 /* The stored object carries a version. The schema will change - the Light rung will make two
    boards per day - and a change without a version to migrate from risks misreading or wiping a
    player's streak. A future build reads store.v and migrates; an object with no v is v1. */
 function loadStore(){ try{ const o=JSON.parse(localStorage.getItem(KEY))||{};
   if((o.v||1) < 2){ delete o.day; delete o.cur; delete o.touches; delete o.done; }  // touches changed meaning (placements -> swaps) in 1.8.3; drop the stale in-progress board, keep the streak
+  if((o.v||1) < 3){ delete o.streak; delete o.lastSolved; delete o.maxStreak; delete o.solved; }  // 1.14.0: the counters are gone; every stat is derived from the history
   o.v=STORE_V; return o; }catch(e){ return {v:STORE_V}; } }
+/* THE STATS ARE THE HISTORY (1.14.0). hist is which day -> how many swaps, and nothing else is
+   kept: solved is the number of days in it, the streak is the run of consecutive days ending
+   today or yesterday, the longest streak is the longest run. Three counters used to be kept
+   alongside and could drift from it - they did, in the wild, on 19 Sept 2026 - and every stat
+   that is computed from the history is a fact. The price, paid knowingly: days before the
+   history began (No 1, and No 2 for anyone who solved it before the evening of 16 Sept) are
+   not in it and are not counted. */
+function histOf(d){ return (d||store).hist||{}; }
+function runEnding(h,L){ let n=0; while(h[L-n]!=null) n++; return n; }            // consecutive solved days ending at L
+function solvedCount(d){ return Object.keys(histOf(d)).length; }
+function streakLive(d){ const h=histOf(d); return h[DAY_NO]!=null ? runEnding(h,DAY_NO) : runEnding(h,DAY_NO-1); }   // alive only if today or yesterday was solved
+function longestStreak(d){ const h=histOf(d); let best=0; Object.keys(h).forEach(function(k){ const n=Number(k); if(h[n-1]==null) best=Math.max(best, runFrom(h,n)); }); return best; }
+function runFrom(h,D){ let n=0; while(h[D+n]!=null) n++; return n; }
 function saveStore(){ if(NOWRITE) return; try{ store.v=STORE_V; localStorage.setItem(KEY,JSON.stringify(store)); }catch(e){} }
 let store=loadStore();
 /* THE RECORD (1.13.0). One small object, kept in localStorage and - once it has a key - mirrored
@@ -347,21 +361,20 @@ let store=loadStore();
    (api/_record.js) - keep them in step.
 
    Merge rule, in one line: the base record stands on every tie. History is a union keyed by day
-   and the first solve of a day is the one that counts; the streak follows the later last-solved
-   day, continuing if the days join; preferences follow the newer change; the board follows the
-   later day, then the finished one, then the one with more weights hung. */
+   and the first solve of a day is the one that counts; preferences follow the newer change; the
+   board follows the later day, then the finished one, then the one with more weights hung. The
+   streak and the counts are not merged - they are computed from the merged history (1.14.0). */
 const HEX32=/^[0-9a-f]{32}$/;
 function newKey(){ const a=new Uint8Array(16); crypto.getRandomValues(a); return Array.prototype.map.call(a,function(b){ return ('0'+b.toString(16)).slice(-2); }).join(''); }
 function packRecord(d){
-  const o={v:STORE_V, key:d.key||'', streak:d.streak||0, lastSolved:d.lastSolved||0, maxStreak:d.maxStreak||0, solved:d.solved||0, hist:d.hist||{},
+  const o={v:STORE_V, key:d.key||'', hist:d.hist||{},
     notesOn:!!d.notesOn, scaleOff:!!d.scaleOff, prefAt:d.prefAt||0,
     board: d.day ? {day:d.day, cur:d.cur||[], touches:d.touches||[], notes:d.notes||[], done:!!d.done, sig:d.sig||''} : null};
   return btoa(JSON.stringify(o)).replace(/[+]/g,'-').replace(/[/]/g,'_').replace(/=+$/,''); }
 function unpackRecord(t){ t=t.replace(/-/g,'+').replace(/_/g,'/'); t+='='.repeat((4-t.length%4)%4);
   const o=JSON.parse(atob(t)); if(!o || typeof o!=='object' || Array.isArray(o)) throw 0;
   const int=function(x,hi){ return Number.isInteger(x) && x>=0 && x<=hi ? x : 0; };
-  const r={key:HEX32.test(o.key)?o.key:'', streak:int(o.streak,100000), lastSolved:int(o.lastSolved,100000), maxStreak:int(o.maxStreak,100000),
-    solved:int(o.solved,100000), hist:{}, notesOn:o.notesOn===true, scaleOff:o.scaleOff===true, prefAt:int(o.prefAt,1e13)};
+  const r={key:HEX32.test(o.key)?o.key:'', hist:{}, notesOn:o.notesOn===true, scaleOff:o.scaleOff===true, prefAt:int(o.prefAt,1e13)};
   if(o.hist && typeof o.hist==='object'){ Object.keys(o.hist).slice(0,5000).forEach(function(k){
     const d=Number(k), v=o.hist[k]; if(Number.isInteger(d) && d>=1 && d<=100000 && Number.isInteger(v) && v>=0 && v<=999) r.hist[d]=v; }); }
   const b=o.board;
@@ -371,14 +384,8 @@ function unpackRecord(t){ t=t.replace(/-/g,'+').replace(/_/g,'/'); t+='='.repeat
     r.touches=(Array.isArray(b.touches)?b.touches:[]).slice(0,12).map(function(x){ return int(x,999); });
     r.notes=(Array.isArray(b.notes)?b.notes:[]).slice(0,12).map(function(x){ return typeof x==='string'?x.slice(0,4):''; }); }
   return r; }
-function runOf(h,L){ let n=0; while(h[L-n]!=null) n++; return n; }   // consecutive solved days ending at L
 function mergeRecord(b,r){                       // b is the record; r is arriving. On a tie, b stands.
-  b.hist=b.hist||{}; Object.keys(r.hist||{}).forEach(function(k){ if(!(k in b.hist)) b.hist[k]=r.hist[k]; });
-  const bl=b.lastSolved||0, rl=r.lastSolved||0;
-  if(rl>bl){ const cont=(rl===bl+1)?(b.streak||0)+1:0; b.streak=Math.max(r.streak||0, cont, runOf(b.hist,rl)); b.lastSolved=rl; }
-  else { b.streak=Math.max(b.streak||0, rl===bl?(r.streak||0):0, runOf(b.hist,bl)); }
-  b.maxStreak=Math.max(b.maxStreak||0, r.maxStreak||0, b.streak||0);
-  b.solved=Math.max(b.solved||0, r.solved||0, Object.keys(b.hist).length, b.streak||0);
+  b.hist=b.hist||{}; Object.keys(r.hist||{}).forEach(function(k){ if(!(k in b.hist)) b.hist[k]=r.hist[k]; });   // a union of days; the first solve of a day counts
   if((r.prefAt||0)>(b.prefAt||0)){ b.notesOn=!!r.notesOn; b.scaleOff=!!r.scaleOff; b.prefAt=r.prefAt; }
   else if(!b.prefAt && !r.prefAt){ b.notesOn=!!(b.notesOn||r.notesOn); b.scaleOff=!!(b.scaleOff||r.scaleOff); }
   if(r.day){ const prog=function(c){ return (c||[]).filter(function(x){return x!=null;}).length; }, bd=b.day||0;
@@ -836,7 +843,7 @@ function tapHook(i){
   if(i<0||i>=P.nh) return;
   if(lockedHooks().has(i)) return;
   if(cur[i]!=null){ touches[i]++; cur[i]=null; selected=null;    // taking a placed weight off is a swap: you must re-hang to finish, so it is already committed
-    if(swaps()===1 && (store.solved||0)<3) teaching=true; }
+    if(swaps()===1 && solvedCount()<3) teaching=true; }
   else if(selected!=null&&used(selected)<P.cap){ const wasEmpty=cur.every(function(x){return x==null;});
     cur[i]=selected; selected=null; teaching=false; if(wasEmpty) logEvent('first_hang'); }
   if(solved()) commitSolve(); else saveState();
@@ -847,8 +854,8 @@ function tapHook(i){
    freezes the day, and advances the streak - up one if yesterday was solved, back to one if a
    day was missed. Neither consults the solution; both are facts about what the player did. */
 /* Both writers re-read localStorage first and merge onto it, so a second tab whose in-memory
-   copy predates the first tab's solve cannot clobber the streak/lastSolved/maxStreak/solved
-   history (1.7.10). saveState never downgrades a day already solved on disk. */
+   copy predates the first tab's solve cannot clobber the history (1.7.10). saveState never
+   downgrades a day already solved on disk. */
 function saveState(){ if(NOWRITE) return;
   const d=loadStore();
   if(d.done && d.day===DAY_NO) return;   // another tab already solved today; don't un-solve it
@@ -860,30 +867,18 @@ function commitSolve(){
   if(NOWRITE) return;
   const d=loadStore();                   // the authoritative streak lives on disk, not in a stale tab
   if(d.done && d.day===DAY_NO){ store=d; return; }
-  const last=d.lastSolved||0;
-  if(last===DAY_NO){                     // already on the record - another device, or a reset: the first result stands (1.13.0)
-    d.day=DAY_NO; d.done=true; d.cur=cur.slice(); d.touches=touches.slice(); d.notes=notes.slice(); d.sig=boardSig;
+  d.hist=d.hist||{};
+  d.day=DAY_NO; d.done=true; d.cur=cur.slice(); d.touches=touches.slice(); d.notes=notes.slice(); d.sig=boardSig;
+  if(d.hist[DAY_NO]!=null){              // already on the record - another device, or a reset: the first result stands (1.13.0)
     store=d; saveStore(); syncPush(); return; }
-  d.streak = (last===DAY_NO-1 ? (d.streak||0)+1 : 1);
-  d.lastSolved=DAY_NO; d.day=DAY_NO; d.done=true;
-  d.cur=cur.slice(); d.touches=touches.slice(); d.notes=notes.slice(); d.sig=boardSig;
-  // history that cannot be reconstructed if we start recording it later: the best streak ever,
-  // and how many days have been solved. Kept even with nothing showing them yet (1.7.6).
-  d.maxStreak=Math.max(d.maxStreak||0, d.streak);
-  d.solved=(d.solved||0)+1;
-  // a streak of N proves at least N solves, and so does a history of N days: solved can never sit
-  // below either. Seen in the wild on 19 Sept 2026 - a record with streak 5 and solved 4, one day
-  // uncounted before the history began - and this heals it on the next solve (1.12.11).
-  d.solved=Math.max(d.solved, d.streak||0, Object.keys(d.hist||{}).length+1);
-  // and, from 1.9.4, the day itself: which day, how many swaps. Keyed by day number so that two
-  // records - two tabs now, two devices later - merge by union with no arithmetic. Everything
-  // personal (a stats panel, perfects, milestones, a calendar, a transfer link) is built from
-  // this and from nothing else; it starts the day it ships and cannot be backfilled.
-  d.hist=d.hist||{}; d.hist[DAY_NO]=swaps();
+  // the day itself: which day, how many swaps. Keyed by day number so that two records - two tabs,
+  // two devices - merge by union with no arithmetic. Every stat is computed from this and from
+  // nothing else (1.14.0); it began on 16 Sept 2026 and cannot be backfilled.
+  d.hist[DAY_NO]=swaps();
   if(!d.key) d.key=newKey();             // a key on the first solve: from here the record can follow the player (1.13.0)
   store=d; saveStore(); syncPush();
 }
-function streakNow(){ return NOWRITE ? 0 : (store.streak||0); }
+function streakNow(){ return NOWRITE ? 0 : streakLive(); }
 /* My Heft (1.9.5): the personal record, read from the stored history and nothing else. Solved
    and the streaks are the counters kept since 1.7.6; perfects, the average and the distribution
    come from hist (1.9.4), so they cover the days since it began. A milestone is one line on the
@@ -903,7 +898,7 @@ const LEVEL_ARM='<svg class="rarm" viewBox="0 0 190 14" aria-hidden="true">'
 function bestLine(){ if(NOWRITE) return '';
   const h=store.hist||{}, v=Object.keys(h).map(function(k){ return h[k]; });
   const parts=[]; if(v.length){ const b=Math.min.apply(null,v); parts.push('Best '+(b===0 ? swapFig(0,b) : '<b>'+b+'</b>')+' Swap'+(b===1?'':'s')); }   // only the figure is coloured or bold
-  if(store.maxStreak) parts.push('Longest Streak <b>'+store.maxStreak+'</b>');
+  const L=longestStreak(); if(L) parts.push('Longest Streak <b>'+L+'</b>');
   return parts.join(DOT); }
 const DOT=' <span class="dot">\u2022</span> ';
 // the way back: the next board arrives at local midnight, the same boundary the day number uses
@@ -914,10 +909,10 @@ function nextLine(){ if(PIN||PRACTICE) return '';
 let nextTimer=null;
 function startCountdown(){ stopCountdown(); nextTimer=setInterval(function(){ const el=document.getElementById('rnext'); if(el) el.innerHTML=nextLine(); else stopCountdown(); }, 30000); }
 function stopCountdown(){ if(nextTimer){ clearInterval(nextTimer); nextTimer=null; } }
-function milestone(){ return (!NOWRITE && MILESTONES[store.streak]) || ''; }
+function milestone(){ return (!NOWRITE && histOf()[DAY_NO]!=null && MILESTONES[streakLive()]) || ''; }
 function statsHTML(){
   const h=store.hist||{}, days=Object.keys(h), n=days.length;
-  const live=(store.lastSolved||0)>=DAY_NO-1 ? (store.streak||0) : 0;   // a streak is only alive if yesterday or today was solved
+  const live=streakLive();
   const perfect=days.filter(function(d){return h[d]===0;}).length;
   const avg=n ? (days.reduce(function(a,d){return a+h[d];},0)/n).toFixed(1) : '\u2013';
   // a day's total over six hooks, so the scale runs 0-6 with 7+ for the tail (1.12.12) - a 3+ top
@@ -926,7 +921,7 @@ function statsHTML(){
   const mx=Math.max.apply(null,bins.concat([1]));
   const today=(!NOWRITE && store.done && store.day===DAY_NO && h[DAY_NO]!=null) ? Math.min(h[DAY_NO],TOP) : -1;
   const row=function(k,v){ return '<div class="prow"><span>'+k+'</span><b>'+v+'</b></div>'; };
-  return row('HEFTs Solved',store.solved||0)+row('Current Streak',live)+row('Longest Streak',store.maxStreak||0)
+  return row('HEFTs Solved',n)+row('Current Streak',live)+row('Longest Streak',longestStreak())
     +row('Perfect Score (0 Swaps)',perfect)+row('Average Swaps',avg)
     +'<div class="dist"><div class="dh">Swaps</div>'+bins.map(function(c,i){
       return '<div class="dbar"><span>'+(i===TOP?TOP+'+':i)+'</span><i class="'+(i===today?'today':'')+'" style="width:'+Math.round(100*c/mx)+'%"></i><span>'+c+'</span></div>';
