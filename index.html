@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en" data-build="1.14.9">
+<html lang="en" data-build="1.14.10">
 <head>
 <meta charset="utf-8">
-<!-- Heft build 1.14.9 -->
+<!-- Heft build 1.14.10 -->
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>HEFT</title>
 <meta property="og:title" content="HEFT">
@@ -150,7 +150,6 @@
 
   #plview{margin-top:4px}
   #por{margin-top:12px}
-  .ppriv{text-align:center;margin-top:14px;font-size:11px;line-height:1.5;color:var(--dim);opacity:.8}
   .build{margin-top:12px;font-size:11px;color:var(--dim);opacity:.55;font-variant-numeric:tabular-nums}
   .hook{cursor:pointer}
 </style>
@@ -202,13 +201,12 @@
     <div class="phere" id="phere" hidden>Linked. This device and the other now share one record.</div>
     <div class="pnote" id="pnote" hidden>Playing from a text and from Safari counts as two devices &mdash; link them once.</div>
     <button class="btn" id="pclose">Close</button>
-    <div class="ppriv">Your record is kept under an anonymous key so your devices can share it. No account, no name.</div>
   </div>
 </div>
 
 <script src="boards.js"></script>
 <script>
-const BUILD='1.14.9';
+const BUILD='1.14.10';
 /* the build string sits in three places so it can be read without running the page: here,
    an html attribute, and a comment in the head. Three copies can disagree, so they are
    checked against each other - a number that lies is worse than one that is hard to read. */
