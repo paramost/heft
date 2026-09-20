@@ -1,6 +1,16 @@
 # Heft — project plan (v2)
 
-**Where things stand:** **build 1.12.3** — the daily is live at heftdaily.com. Five weights on
+**Where things stand:** **build 1.14.11** — the daily is live at heftdaily.com. Since 1.12.3, the
+personal record grew up: a result card on solve (Level over a lit arm, swaps/streak, the circles,
+Share and My HEFT, the record line, a countdown), a My HEFT panel whose stats are **derived from
+the day-by-day history** and nothing else (no counters, 1.14.0), a two-column swaps distribution
+(0-6, 7+), note fields and a scale toggle, and **anonymous-key sync** (`api/sync.js` + the shared
+merge in `api/_record.js`; keep it in step with the page's copy) that lets a player link devices
+by a four-digit code and share one record. My HEFT shows the true device count ("Linked - N"),
+and a returner on a new device is met by "Playing HEFT on another device?" on the first board and
+in the panel. `heftdaily.com/practice` is the shareable practice URL with an orange card.
+
+**Where things stood at 1.12.3:** the daily is live. Five weights on
 six hooks (the heavy rung), a date-seeded board from an epoch of 15 Sept 2026 (No 1), persisted
 in `localStorage` with a streak, shared as a card with a link that unfurls. Anonymous
 aggregate logging (opened / first_hang / solved / swap histogram) writes per-day counts to

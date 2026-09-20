@@ -287,6 +287,22 @@ a transfer - because the same five boxes that help one player are noise to anoth
 rack is the one part of the screen that has stayed perfectly clean. 16px text: iOS zooms the
 page on focusing anything smaller.
 
+**Linking, and telling a returner apart from a newcomer.** 1.14.1-1.14.11, 20 Sept 2026.
+Sync (1.13.0) let devices share a record, but the flow was invisible until the moment it was
+needed - and that moment, a returning player's first visit on a second device, is
+indistinguishable from a newcomer's first visit: fresh storage either way, no client signal,
+and iOS siloes Safari / the Messages browser / a home-screen icon so even one phone cannot
+bridge itself; a share cannot carry the key (anyone shared with would inherit the record). So
+detection was abandoned for two prompts that cost a newcomer only a glance: a first-visit line
+under the board, shown only on a device with no record of its own and retiring at its first
+solve, and the same message permanently in My HEFT - "Playing HEFT on another device?" with a
+"Link your devices" button. A proactive scorecard nudge was built and cut as clutter (Dan). The
+panel states the truth rather than the mere presence of a key: each device carries an anonymous
+id, the server counts them, and My HEFT reads "Linked - N devices" only at two or more, else
+the question. Link/Bring-here collapsed into one Link view (show a code, or enter one). The
+privacy line and the Perfect Score row were removed as redundant (the distribution's 0 is the
+perfect count).
+
 **The stats are the history, and nothing else.** 1.14.0, 19 Sept 2026. Three counters -
 streak, longest streak, solved - had been kept beside the day-by-day history since 1.7.6 and
 written in the same place, and still they drifted: a record with a streak of 5 and a count of
