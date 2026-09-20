@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en" data-build="1.14.4">
+<html lang="en" data-build="1.14.5">
 <head>
 <meta charset="utf-8">
-<!-- Heft build 1.14.4 -->
+<!-- Heft build 1.14.5 -->
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>HEFT</title>
 <meta property="og:title" content="HEFT">
@@ -143,6 +143,13 @@
   .plink.solo{color:var(--dim)}
   .pintro{text-align:center;font-size:12.5px;line-height:1.5;color:var(--ink);margin:10px 0 2px}
   .pnote{text-align:center;font-size:11px;line-height:1.5;color:var(--dim);margin-top:12px}
+  /* reactive: only on a device with no record of its own, so a returner on a new device finds the
+     way to their streak; it retires the moment this device solves anything (1.14.5) */
+  .firstlink{width:100%;max-width:430px;text-align:center;margin-top:14px;font-size:12.5px;color:var(--dim);cursor:pointer}
+  .firstlink b{color:var(--lit);font-weight:500}
+  /* proactive: once, on a streak worth protecting, on a device that is still on its own */
+  .rnudge{font-size:12.5px;color:var(--dim);margin-top:12px;cursor:pointer}
+  .rnudge b{color:var(--lit);font-weight:500}
   #plview{margin-top:4px}
   #por{margin-top:12px}
   .ppriv{text-align:center;margin-top:14px;font-size:11px;line-height:1.5;color:var(--dim);opacity:.8}
@@ -175,6 +182,7 @@
   <button class="btn" id="next" style="display:none">Random board</button>
   <form class="pickboard" id="pickboard" hidden><input id="boardno" inputmode="numeric" pattern="[0-9]*" maxlength="3" placeholder="Board #" aria-label="board number"><button class="btn" type="submit">Go</button></form>
 </footer>
+<div class="firstlink" id="firstlink" hidden>Already play HEFT elsewhere? <b>Bring your record here</b></div>
 <div class="build" id="build"></div>
 <div class="veil" id="veil" hidden>
   <div class="panel" role="dialog" aria-label="My HEFT">
@@ -202,7 +210,7 @@
 
 <script src="boards.js"></script>
 <script>
-const BUILD='1.14.4';
+const BUILD='1.14.5';
 /* the build string sits in three places so it can be read without running the page: here,
    an html attribute, and a comment in the head. Three copies can disagree, so they are
    checked against each other - a number that lies is worse than one that is hard to read. */
@@ -955,6 +963,7 @@ function statsHTML(){
     $('plink').textContent=linked ? 'Linked \u2022 '+n+' devices' : 'This is your only HEFT device.'; $('plink').classList.toggle('solo',!linked);
     $('punlink').hidden=!linked||arrived; }
   window.refreshLinked=refreshLinked;
+  window.openLinkView=function(){ open(); $('plinkbtn').click(); };   // jump straight to the link view (1.14.5)
   function say(t){ $('pmsg').textContent=t; $('pmsg').hidden=false; }
   $('stats').onclick=open;
   $('pclose').onclick=close;
@@ -1034,6 +1043,10 @@ function message(){
   document.getElementById('meta').innerHTML=(PRACTICE ? practiceStamp() : stamp())
     +'<br>'+cn+' swap'+(c===1?'':'s');   // hooks/weights line dropped (1.7.5): the rack and board show both
   promptEl.classList.toggle('win',done);
+  // the reactive line shows only on a device that has never recorded a day and is not linked -
+  // indistinguishable from a newcomer, so it must cost a newcomer only a glance and retire at
+  // their first solve (1.14.5)
+  document.getElementById('firstlink').hidden = NOWRITE || frozen || !!store.key || solvedCount()>0;
   footHome();
   rack.hidden=frozen; axisEl.hidden=frozen||store.scaleOff;    // a frozen day has nothing left to pick from; the scale can be switched off (1.12.5)
   document.getElementById('notes').hidden=frozen||!store.notesOn;
@@ -1045,6 +1058,7 @@ function message(){
   if(done){
     const k=streakNow(), best=bestLine(), next=nextLine();
     const stands = !NOWRITE && store.hist && store.hist[DAY_NO]!=null && store.hist[DAY_NO]!==c;   // solved first elsewhere
+    let nudge=false; try{ nudge = !NOWRITE && !stands && deviceCount()<2 && streakLive()>=3 && !localStorage.getItem('heftnudge'); }catch(e){}   // once, on a streak worth protecting, still on one device
     promptEl.innerHTML=
       '<div class="result">'+
         '<div class="rtitle"><span class="rword">Level</span>'+LEVEL_ARM+'</div>'+
@@ -1054,9 +1068,12 @@ function message(){
         '<div class="sgrid">'+grid()+'</div>'+
         '<div class="rfoot" id="rfoot"></div>'+
         (best ? '<div class="rbest">'+best+'</div>' : '')+
+        (nudge ? '<div class="rnudge" id="rnudge">Keep your streak on every device &mdash; <b>link them</b></div>' : '')+
         (next ? '<div class="rnext" id="rnext">'+next+'</div>' : '')+
       '</div>';
     document.getElementById('rfoot').appendChild(foot);
+    if(nudge){ try{ localStorage.setItem('heftnudge','1'); }catch(e){}   // shown once, then never again on this device
+      document.getElementById('rnudge').onclick=function(){ if(window.openLinkView) window.openLinkView(); }; }
     if(!PRACTICE && !stands){             // a practice result is a random board, not the daily; a result that did not stand is not this device's to share
       document.getElementById('copy').style.display='';
       document.getElementById('copy').classList.add('go');
@@ -1146,6 +1163,7 @@ svg.addEventListener('pointerup',function(e){
 svg.addEventListener('pointercancel',function(){downOn=-1;downAt=null;});
 document.addEventListener('touchstart',function(e){if(e.target.closest('#board'))e.preventDefault();},{passive:false});
 
+document.getElementById('firstlink').onclick=function(){ if(window.openLinkView) window.openLinkView(); };
 load(); window.scrollTo(0,0); requestAnimationFrame(frame); syncPull();
 </script>
 </body>
