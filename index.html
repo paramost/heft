@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en" data-build="1.14.11">
+<html lang="en" data-build="1.14.12">
 <head>
 <meta charset="utf-8">
-<!-- Heft build 1.14.11 -->
+<!-- Heft build 1.14.12 -->
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>HEFT</title>
 <meta property="og:title" content="HEFT">
@@ -206,7 +206,7 @@
 
 <script src="boards.js"></script>
 <script>
-const BUILD='1.14.11';
+const BUILD='1.14.12';
 /* the build string sits in three places so it can be read without running the page: here,
    an html attribute, and a comment in the head. Three copies can disagree, so they are
    checked against each other - a number that lies is worse than one that is hard to read. */
@@ -453,8 +453,19 @@ const RESTORED=(function(){
 const LOG_LIVE = location.hostname==='heftdaily.com';
 const LOG_PROBE = /[?&]log=1/.test(location.search);
 const LOG_TEST = LOG_PROBE || !LOG_LIVE;
+/* ?nolog marks this storage as the author's, and it never logs again (1.14.12): the funnel's
+   first read had the check-after-push opens in it - one per iOS storage, none of them a player -
+   and could not be told from a cohort that bounced. Once per storage: Safari, the icon, the
+   Messages browser. ?nolog=0 clears it. A device fact, not a player one, so it lives in its own
+   key and a link does not carry it. An explicit ?log=1 probe still logs, to the test namespace.
+   Prints "· nolog" beside the build so each storage can be checked on the phone. */
+const NOLOG = (function(){ try{
+  if(/[?&]nolog=0(?=&|$)/.test(location.search)) localStorage.removeItem('heftnolog');
+  else if(/[?&]nolog(?=&|$)/.test(location.search)) localStorage.setItem('heftnolog','1');
+  return !!localStorage.getItem('heftnolog'); }catch(e){ return false; } })();
 function logEvent(name, swaps){
   if(PIN || PRACTICE) return;
+  if(NOLOG && !LOG_PROBE) return;
   if(PRELAUNCH && !LOG_PROBE) return;
   try{
     if(!LOG_PROBE){ let f=JSON.parse(localStorage.getItem('heftlog'))||{};
@@ -1085,7 +1096,7 @@ function message(){
 // fixed for the life of the page, so it is written once rather than on every tap
 document.getElementById('build').textContent='build '+BUILD
   +(BUILD_OK?'':' \u00b7 BUILD MISMATCH')+(INK_F!==1?' \u00b7 ink '+INK_F:'')+(FLOOR_DEG!==1.25?' \u00b7 floor '+FLOOR_DEG:'')+(Math.abs(MAX_TILT-15*Math.PI/180)>1e-9?' \u00b7 tiltmax '+(MAX_TILT*180/Math.PI).toFixed(0):'')+(TILT_EXP!==1?' \u00b7 tilt '+TILT_EXP:'')+(GLYPHS!=='point'?' \u00b7 glyphs '+GLYPHS:'')
-  +(BOW_F!==0?' \u00b7 bow '+BOW_F:'')+(PIN?' \u00b7 '+PIN.label:'')+(PRACTICE?' \u00b7 practice':'')+(PRELAUNCH?' \u00b7 preview':'');
+  +(BOW_F!==0?' \u00b7 bow '+BOW_F:'')+(PIN?' \u00b7 '+PIN.label:'')+(PRACTICE?' \u00b7 practice':'')+(PRELAUNCH?' \u00b7 preview':'')+(NOLOG?' \u00b7 nolog':'');
 /* Clear is gone (1.9.7). A swap is counted when a weight comes off (1.8.3) and Clear took them
    all off for free - a free reset of a scored board - and on a daily it was a one-tap way to
    wipe a day by accident. Taking weights off one at a time does everything it did, counted. */
