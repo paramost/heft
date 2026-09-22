@@ -4,14 +4,15 @@
 //
 // Merge rule, in one line: the base record stands on every tie. History is a union keyed by day
 // and the first solve of a day is the one that counts; preferences follow the newer change; the
-// board follows the later day, then the finished one, then the one with more weights hung. No
+// board follows the later day, then the finished one, then the one touched last (1.14.13), with
+// the count of weights hung as the fallback for records written before that stamp existed. No
 // counters are kept or merged: the page computes every stat from the history (1.14.0).
 
 const HEX32 = /^[0-9a-f]{32}$/;
 
 function pack(d) {
   const o = { v: 3, key: d.key || '', hist: d.hist || {}, devices: (d.devices || []).slice(0, 10), notesOn: !!d.notesOn, scaleOff: !!d.scaleOff, prefAt: d.prefAt || 0,
-    board: d.day ? { day: d.day, cur: d.cur || [], touches: d.touches || [], notes: d.notes || [], done: !!d.done, sig: d.sig || '' } : null };
+    board: d.day ? { day: d.day, cur: d.cur || [], touches: d.touches || [], notes: d.notes || [], done: !!d.done, sig: d.sig || '', boardAt: d.boardAt || 0 } : null };
   return Buffer.from(JSON.stringify(o)).toString('base64').replace(/[+]/g, '-').replace(/[/]/g, '_').replace(/=+$/, '');
 }
 
@@ -35,6 +36,7 @@ function unpack(t) {
     r.cur = b.cur.map(function (x) { return (Number.isInteger(x) && x >= 0 && x <= 9) ? x : null; });
     r.touches = (Array.isArray(b.touches) ? b.touches : []).slice(0, 12).map(function (x) { return int(x, 999); });
     r.notes = (Array.isArray(b.notes) ? b.notes : []).slice(0, 12).map(function (x) { return typeof x === 'string' ? x.slice(0, 4) : ''; });
+    r.boardAt = int(b.boardAt, 1e13);
   }
   return r;
 }
@@ -44,11 +46,12 @@ function merge(b, r) {                          // b is the record; r is arrivin
   Object.keys(r.hist || {}).forEach(function (k) { if (!(k in b.hist)) b.hist[k] = r.hist[k]; });   // a union of days; the first solve of a day counts
   if ((r.prefAt || 0) > (b.prefAt || 0)) { b.notesOn = !!r.notesOn; b.scaleOff = !!r.scaleOff; b.prefAt = r.prefAt; }
   else if (!b.prefAt && !r.prefAt) { b.notesOn = !!(b.notesOn || r.notesOn); b.scaleOff = !!(b.scaleOff || r.scaleOff); }
-  if (r.day) {                                  // the board: later day, then the finished one, then the one further along
+  if (r.day) {                                  // the board: later day, then the finished one, then the one touched last
     const prog = function (c) { return (c || []).filter(function (x) { return x != null; }).length; };
     const bd = b.day || 0;
-    if (r.day > bd || (r.day === bd && !b.done && (r.done || prog(r.cur) > prog(b.cur)))) {
-      b.day = r.day; b.cur = (r.cur || []).slice(); b.touches = (r.touches || []).slice(); b.notes = (r.notes || []).slice(); b.done = !!r.done; b.sig = r.sig || '';
+    const rLater = (r.boardAt || 0) > (b.boardAt || 0), bLater = (b.boardAt || 0) > (r.boardAt || 0);
+    if (r.day > bd || (r.day === bd && !b.done && (r.done || rLater || (!bLater && prog(r.cur) > prog(b.cur))))) {
+      b.day = r.day; b.cur = (r.cur || []).slice(); b.touches = (r.touches || []).slice(); b.notes = (r.notes || []).slice(); b.done = !!r.done; b.sig = r.sig || ''; b.boardAt = r.boardAt || 0;
     }
   }
   if (!b.key && r.key) b.key = r.key;

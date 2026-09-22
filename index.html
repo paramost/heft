@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en" data-build="1.14.12">
+<html lang="en" data-build="1.14.13">
 <head>
 <meta charset="utf-8">
-<!-- Heft build 1.14.12 -->
+<!-- Heft build 1.14.13 -->
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>HEFT</title>
 <meta property="og:title" content="HEFT">
@@ -206,7 +206,7 @@
 
 <script src="boards.js"></script>
 <script>
-const BUILD='1.14.12';
+const BUILD='1.14.13';
 /* the build string sits in three places so it can be read without running the page: here,
    an html attribute, and a comment in the head. Three copies can disagree, so they are
    checked against each other - a number that lies is worse than one that is hard to read. */
@@ -384,7 +384,7 @@ function newKey(){ const a=new Uint8Array(16); crypto.getRandomValues(a); return
 function packRecord(d){
   const o={v:STORE_V, key:d.key||'', hist:d.hist||{}, devices:(d.devices||[]).slice(0,10),
     notesOn:!!d.notesOn, scaleOff:!!d.scaleOff, prefAt:d.prefAt||0,
-    board: d.day ? {day:d.day, cur:d.cur||[], touches:d.touches||[], notes:d.notes||[], done:!!d.done, sig:d.sig||''} : null};
+    board: d.day ? {day:d.day, cur:d.cur||[], touches:d.touches||[], notes:d.notes||[], done:!!d.done, sig:d.sig||'', boardAt:d.boardAt||0} : null};
   return btoa(JSON.stringify(o)).replace(/[+]/g,'-').replace(/[/]/g,'_').replace(/=+$/,''); }
 function unpackRecord(t){ t=t.replace(/-/g,'+').replace(/_/g,'/'); t+='='.repeat((4-t.length%4)%4);
   const o=JSON.parse(atob(t)); if(!o || typeof o!=='object' || Array.isArray(o)) throw 0;
@@ -398,15 +398,23 @@ function unpackRecord(t){ t=t.replace(/-/g,'+').replace(/_/g,'/'); t+='='.repeat
     r.day=b.day; r.done=b.done===true; r.sig=typeof b.sig==='string'?b.sig.slice(0,16):'';
     r.cur=b.cur.map(function(x){ return (Number.isInteger(x)&&x>=0&&x<=9)?x:null; });
     r.touches=(Array.isArray(b.touches)?b.touches:[]).slice(0,12).map(function(x){ return int(x,999); });
-    r.notes=(Array.isArray(b.notes)?b.notes:[]).slice(0,12).map(function(x){ return typeof x==='string'?x.slice(0,4):''; }); }
+    r.notes=(Array.isArray(b.notes)?b.notes:[]).slice(0,12).map(function(x){ return typeof x==='string'?x.slice(0,4):''; });
+    r.boardAt=int(b.boardAt,1e13); }
   return r; }
 function mergeRecord(b,r){                       // b is the record; r is arriving. On a tie, b stands.
   b.hist=b.hist||{}; Object.keys(r.hist||{}).forEach(function(k){ if(!(k in b.hist)) b.hist[k]=r.hist[k]; });   // a union of days; the first solve of a day counts
   if((r.prefAt||0)>(b.prefAt||0)){ b.notesOn=!!r.notesOn; b.scaleOff=!!r.scaleOff; b.prefAt=r.prefAt; }
   else if(!b.prefAt && !r.prefAt){ b.notesOn=!!(b.notesOn||r.notesOn); b.scaleOff=!!(b.scaleOff||r.scaleOff); }
+  /* On the same day, the board the player TOUCHED last wins (1.14.13). boardAt is stamped by a
+     placement, a removal or a note, and never by merely opening the day, so a device claiming
+     today cannot beat work already done on another one. The hung count stays as the fallback for
+     records written before the stamp: it counts weights on hooks, so it cannot see a note typed
+     or a weight lifted off - which is why notes came back empty after leaving the page, and why
+     a swap in progress could be undone. */
   if(r.day){ const prog=function(c){ return (c||[]).filter(function(x){return x!=null;}).length; }, bd=b.day||0;
-    if(r.day>bd || (r.day===bd && !b.done && (r.done || prog(r.cur)>prog(b.cur)))){
-      b.day=r.day; b.cur=(r.cur||[]).slice(); b.touches=(r.touches||[]).slice(); b.notes=(r.notes||[]).slice(); b.done=!!r.done; b.sig=r.sig||''; } }
+    const rLater=(r.boardAt||0)>(b.boardAt||0), bLater=(b.boardAt||0)>(r.boardAt||0);
+    if(r.day>bd || (r.day===bd && !b.done && (r.done || rLater || (!bLater && prog(r.cur)>prog(b.cur))))){
+      b.day=r.day; b.cur=(r.cur||[]).slice(); b.touches=(r.touches||[]).slice(); b.notes=(r.notes||[]).slice(); b.done=!!r.done; b.sig=r.sig||''; b.boardAt=r.boardAt||0; } }
   if(!b.key && r.key) b.key=r.key;
   b.devices=(b.devices||[]).slice(); (r.devices||[]).forEach(function(x){ if(b.devices.indexOf(x)<0 && b.devices.length<10) b.devices.push(x); });
   return b; }
@@ -418,7 +426,7 @@ function writeRecord(d){ d.v=STORE_V; try{ localStorage.setItem(KEY,JSON.stringi
 function absorb(packed){
   const local=loadStore(), before=JSON.stringify(local);
   const merged=mergeRecord(unpackRecord(packed), JSON.parse(before));
-  if(local.done && local.day===merged.day && merged.done){ merged.cur=local.cur; merged.touches=local.touches; merged.notes=local.notes; merged.sig=local.sig; }
+  if(local.done && local.day===merged.day && merged.done){ merged.cur=local.cur; merged.touches=local.touches; merged.notes=local.notes; merged.sig=local.sig; merged.boardAt=local.boardAt||merged.boardAt; }
   if(!merged.key) merged.key=local.key||'';
   writeRecord(merged); if(!NOWRITE) store=merged;
   return JSON.stringify(merged)!==before; }
@@ -603,7 +611,7 @@ function load(){
       if(store.done){ frozen=true; }                 // a finished day comes back solved and frozen
       if(!store.sig){ store.sig=boardSig; saveStore(); }
     } else {
-      store.day=DAY_NO; store.cur=cur.slice(); store.touches=touches.slice(); store.notes=[]; store.done=false; store.sig=boardSig;
+      store.day=DAY_NO; store.cur=cur.slice(); store.touches=touches.slice(); store.notes=[]; store.done=false; store.sig=boardSig; store.boardAt=0;   // claimed, not touched: an empty board must not outrank another device's work
       saveStore();
     }
   }
@@ -889,7 +897,7 @@ function tapHook(i){
 function saveState(){ if(NOWRITE) return;
   const d=loadStore();
   if(d.done && d.day===DAY_NO) return;   // another tab already solved today; don't un-solve it
-  d.day=DAY_NO; d.cur=cur.slice(); d.touches=touches.slice(); d.notes=notes.slice(); d.done=false; d.sig=boardSig;
+  d.day=DAY_NO; d.cur=cur.slice(); d.touches=touches.slice(); d.notes=notes.slice(); d.done=false; d.sig=boardSig; d.boardAt=Date.now();
   store=d; saveStore(); }
 function commitSolve(){
   frozen = !PRACTICE;                    // practice stays editable so Clear/retry works; the daily freezes
@@ -898,7 +906,7 @@ function commitSolve(){
   const d=loadStore();                   // the authoritative streak lives on disk, not in a stale tab
   if(d.done && d.day===DAY_NO){ store=d; return; }
   d.hist=d.hist||{};
-  d.day=DAY_NO; d.done=true; d.cur=cur.slice(); d.touches=touches.slice(); d.notes=notes.slice(); d.sig=boardSig;
+  d.day=DAY_NO; d.done=true; d.cur=cur.slice(); d.touches=touches.slice(); d.notes=notes.slice(); d.sig=boardSig; d.boardAt=Date.now();
   if(d.hist[DAY_NO]!=null){              // already on the record - another device, or a reset: the first result stands (1.13.0)
     store=d; saveStore(); syncPush(); return; }
   // the day itself: which day, how many swaps. Keyed by day number so that two records - two tabs,
