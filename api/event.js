@@ -6,7 +6,9 @@
 //
 // Keys: d:<day>:<event> and d:<day>:sw:<swaps> for the live daily; t:<...> for ?log=1 probes.
 
-const EVENTS = { opened: 1, first_hang: 1, solved: 1 };
+// tutorial_offer is the card being shown, tutorial_start a player taking it, tutorial_done
+// finishing it - the only way to tell whether the teaching works or is being skipped (1.14.14)
+const EVENTS = { opened: 1, first_hang: 1, solved: 1, tutorial_offer: 1, tutorial_start: 1, tutorial_done: 1 };
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') { res.statusCode = 405; return res.end(); }

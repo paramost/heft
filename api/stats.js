@@ -22,7 +22,7 @@ module.exports = async function handler(req, res) {
   const from = Math.max(1, to - days + 1);   // a window that ends at today, not a fixed range from day 1
   const cmds = [], meta = [];
   for (let d = from; d <= to; d++) {
-    ['opened', 'first_hang', 'solved'].forEach(function (e) { cmds.push(['GET', pre + ':' + d + ':' + e]); meta.push([d, e]); });
+    ['opened', 'first_hang', 'solved', 'tutorial_offer', 'tutorial_start', 'tutorial_done'].forEach(function (e) { cmds.push(['GET', pre + ':' + d + ':' + e]); meta.push([d, e]); });
     for (let sw = 0; sw <= 30; sw++) { cmds.push(['GET', pre + ':' + d + ':sw:' + sw]); meta.push([d, 'sw' + sw]); }
   }
 

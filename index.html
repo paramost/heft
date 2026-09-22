@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en" data-build="1.14.13">
+<html lang="en" data-build="1.14.14">
 <head>
 <meta charset="utf-8">
-<!-- Heft build 1.14.13 -->
+<!-- Heft build 1.14.14 -->
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>HEFT</title>
 <meta property="og:title" content="HEFT">
@@ -147,6 +147,10 @@
      way to their streak; it retires the moment this device solves anything (1.14.5) */
   .firstlink{width:100%;max-width:430px;text-align:center;margin-top:16px}
   .firstlink .flq{font-size:12.5px;color:var(--dim);margin-bottom:9px}
+  /* the first-visit offer sits OVER the day's board rather than instead of it, so the board it
+     is offering to explain is visible behind it and the tutorial reads as something extra */
+  .veil.soft{background:rgba(4,5,15,.55)}
+  .tdone{text-align:center;font-size:12.5px;line-height:1.55;color:var(--dim);margin-top:10px}
 
   #plview{margin-top:4px}
   #por{margin-top:12px}
@@ -177,10 +181,19 @@
   <button class="btn" id="copy" style="display:none">Share <svg class="ico" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="M8 7l4-4 4 4"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg></button>
   <button class="btn me" id="stats">My HEFT</button>
   <button class="btn" id="next" style="display:none">Random board</button>
+  <button class="btn" id="tback" style="display:none">Play today&#8217;s board</button>
   <form class="pickboard" id="pickboard" hidden><input id="boardno" inputmode="numeric" pattern="[0-9]*" maxlength="3" placeholder="Board #" aria-label="board number"><button class="btn" type="submit">Go</button></form>
 </footer>
 <div class="firstlink" id="firstlink" hidden><div class="flq">Playing HEFT on another device?</div><button class="btn me" id="firstlinkbtn">Link your devices</button></div>
 <div class="build" id="build"></div>
+<div class="veil soft" id="learnveil" hidden>
+  <div class="panel">
+    <div class="ptitle">NEW TO HEFT</div>
+    <div class="pintro">A quick board shows you how it works. About twenty seconds.</div>
+    <button class="btn" id="learngo">Show me how</button>
+    <button class="btn" id="learnskip">Play today&#8217;s board</button>
+  </div>
+</div>
 <div class="veil" id="veil" hidden>
   <div class="panel" role="dialog" aria-label="My HEFT">
     <div class="ptitle">MY HEFT</div>
@@ -200,13 +213,14 @@
     <div class="pmsg" id="pmsg" hidden></div>
     <div class="phere" id="phere" hidden>Linked. This device and the other now share one record.</div>
     <div class="pnote" id="pnote" hidden>Playing from a text and from Safari counts as two devices &mdash; link them once.</div>
+    <button class="btn" id="phow">How to play</button>
     <button class="btn" id="pclose">Close</button>
   </div>
 </div>
 
 <script src="boards.js"></script>
 <script>
-const BUILD='1.14.13';
+const BUILD='1.14.14';
 /* the build string sits in three places so it can be read without running the page: here,
    an html attribute, and a comment in the head. Three copies can disagree, so they are
    checked against each other - a number that lies is worse than one that is hard to read. */
@@ -325,6 +339,15 @@ if(typeof PUZZLES==='undefined' || !PUZZLES.length){
   throw new Error('Heft: boards.js missing');
 }
 const L=PUZZLES.length;
+/* THE TUTORIAL BOARD (1.14.14). Hand-made, not generated: the bank's constraints exist to make
+   a board worth solving, and this one exists to be read at a glance. One arm, two hooks, two
+   weights, levers 2 and 4 - so the short side needs twice the mass and the obvious first try,
+   lightest on the left, leans by 9 degrees of the 15 available. Every lesson the daily never
+   states is here: an empty hook weighs nothing, an arm leans to its heavier side in proportion,
+   and taking a weight back off costs a swap. Verified by tools/check_tutor.js. */
+const TUTOR_BOARDS = [
+  {"nh":2,"k":2,"cap":1,"tree":{"t":"a","ld":2,"rd":4,"l":{"t":"h","i":0},"r":{"t":"h","i":1}},"vals":[1,2],"sol":[1,0]}
+];
 function dayNumber(){ const t=new Date();
   return Math.floor((Date.UTC(t.getFullYear(),t.getMonth(),t.getDate())-EPOCH)/86400000)+1; }
 function dateForDay(n){ return new Date(EPOCH+(n-1)*86400000); }   // read with getUTC* to match the boundary
@@ -342,10 +365,17 @@ const PIN=(function(){ const b=/[?&]board=(\d+)/.exec(location.search), d=/[?&]d
   if(d){ const v=parseInt(d[1],10); return {kind:'day', dayNo:v, idx:((v-1)%L+L)%L, label:'day '+v}; }
   return null; })();
 const PRACTICE = !PIN && /[?&]practice/.test(location.search);
+/* - the tutorial (?learn): its own hand-made board, reached from the first-visit card or from
+     My HEFT, writing nothing and logging nothing to the daily's counters - only its own two
+     events - and left by a button that is on screen throughout. The walkthrough rejection was
+     lifted on 22 Sept 2026; the line that replaced it is that a tutorial may say anything about
+     ITS OWN board, and nothing anywhere may say anything about today's. */
+const TUTOR = !PIN && !PRACTICE && /[?&]learn/.test(location.search);
 const rawDay = PIN ? PIN.dayNo : dayNumber();
-const PRELAUNCH = !PIN && !PRACTICE && rawDay < 1;
+const PRELAUNCH = !PIN && !PRACTICE && !TUTOR && rawDay < 1;
 const DAY_NO = PIN ? PIN.dayNo : (PRELAUNCH ? 1 : rawDay);   // preview shows No 1
-const NOWRITE = !!PIN || PRACTICE || PRELAUNCH;              // only the real daily persists and logs
+const NOWRITE = !!PIN || PRACTICE || PRELAUNCH || TUTOR;     // only the real daily persists and logs
+const BANK = TUTOR ? TUTOR_BOARDS : PUZZLES;
 
 const KEY='heft', STORE_V=3;
 /* The stored object carries a version. The schema will change - the Light rung will make two
@@ -473,6 +503,7 @@ const NOLOG = (function(){ try{
   return !!localStorage.getItem('heftnolog'); }catch(e){ return false; } })();
 function logEvent(name, swaps){
   if(PIN || PRACTICE) return;
+  if(TUTOR && name.indexOf('tutorial')!==0) return;   // a tutorial open is not a player opening the daily: its counters must stay clean
   if(NOLOG && !LOG_PROBE) return;
   if(PRELAUNCH && !LOG_PROBE) return;
   try{
@@ -487,7 +518,7 @@ function logEvent(name, swaps){
        body:JSON.stringify(body),keepalive:true}).catch(function(){}); }catch(e){}
 }
 
-let day = PIN ? PIN.idx : PRACTICE ? randomBoard(-1) : ((DAY_NO-1)%L+L)%L,
+let day = TUTOR ? 0 : PIN ? PIN.idx : PRACTICE ? randomBoard(-1) : ((DAY_NO-1)%L+L)%L,
     P, stocks, rackOrder, cur, touches, notes=[], tilt, glow, depth=[], selected=null, ceilG=0, frozen=false;
 
 
@@ -587,7 +618,7 @@ function sigOf(b){ const t=JSON.stringify(b,function(k,v){ return k.charAt(0)===
   let h=5381; for(let i=0;i<t.length;i++) h=((h*33)^t.charCodeAt(i))>>>0; return h.toString(36); }
 let boardSig='';
 function load(){
-  P=PUZZLES[day]; boardSig=sigOf(P); P._arms=armList(P.tree,[]);
+  P=BANK[day]; boardSig=sigOf(P); P._arms=armList(P.tree,[]);
   cur=new Array(P.nh).fill(null); touches=new Array(P.nh).fill(0); hitPts=[];
   tilt=P._arms.map(function(){return {cur:0,ph:Math.random()*6.28};});
   glow=P._arms.map(function(){return 0;}); ceilG=0;
@@ -659,6 +690,7 @@ function fit(){
   const r=stageEl.getBoundingClientRect();
   FRAME={x:Math.round(x0-pad), w:w, hWorst:hWorst,
          k:(r.width>0&&r.height>0) ? Math.min(r.width/w, r.height/hWorst) : 0};
+  if(TUTOR) FRAME.k=Math.min(FRAME.k,1);   // a two-hook board is narrow, so the fit would draw it at 2.4x and its weights with it
   lastH=-1; reframe(true);
 }
 // every frame: the box, never the scale
@@ -902,6 +934,7 @@ function saveState(){ if(NOWRITE) return;
 function commitSolve(){
   frozen = !PRACTICE;                    // practice stays editable so Clear/retry works; the daily freezes
   logEvent('solved', swaps());
+  if(TUTOR) logEvent('tutorial_done');
   if(NOWRITE) return;
   const d=loadStore();                   // the authoritative streak lives on disk, not in a stale tab
   if(d.done && d.day===DAY_NO){ store=d; return; }
@@ -996,6 +1029,7 @@ function statsHTML(){
     const d=loadStore(); const key=d.key;
     if(key) fetch('/api/sync',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:key, dev:DEV, leave:true})}).catch(function(){});   // take this device off the count
     delete d.key; d.devices=[]; writeRecord(d); if(!NOWRITE){ store.key=''; store.devices=[]; } open(); };
+  $('phow').onclick=function(){ location.href=location.pathname+'?learn'; };
   $('plinkbtn').onclick=function(){ $('plinkbtn').hidden=true; $('plview').hidden=false; $('pnote').hidden=false; };
   $('pmove').onclick=function(){
     const b=this; b.disabled=true;
@@ -1027,6 +1061,8 @@ const MON=['Jan','Feb','Mar','Apr','May','June','July','Aug','Sept','Oct','Nov',
 function stamp(){ const t=dateForDay(DAY_NO); return MON[t.getUTCMonth()]+' '+t.getUTCDate()+' • No '+DAY_NO; }
 // the header's top line in practice (1.12.3): a random board never wears the daily's stamp
 function practiceStamp(){ return '<span style="color:var(--rest)">Practice</span> <span style="color:var(--lit)">\u2022</span> <span style="color:var(--rest)">Board '+(day+1)+'</span>'; }
+// the tutorial wears neither the date nor a board number: it is not a day and not the bank
+function learnStamp(){ return '<span style="color:var(--lit)">Learn</span>'; }
 // one stat row: swaps, and the streak beside it. A solved card always has a streak of at least 1
 // (solving today is a one-day streak), so it always shows; only a testing pin has none.
 function scoreLine(){ const c=swaps(), k=streakNow(); return 'Swaps '+c+(k>=1 ? ' \u2022 Streak '+k : ''); }   // no colons (1.11.3)
@@ -1050,11 +1086,20 @@ function grid(){ return touches.map(function(c){
    was missed (1.9.1); letting the action prompt interrupt it and then returning after the hang
    read as if the hang were a second swap (1.9.3). On a player's first few solved days only. */
 let teaching=false;
+/* The tutorial says out loud the three things the daily never states, one at a time and only
+   after the move that earns each: that an empty hook weighs nothing, that an arm leans to its
+   heavier side, and that taking a weight back off is what a swap is. */
+function tutorPrompt(){
+  const hung=cur.filter(function(x){return x!=null;}).length;
+  if(hung===0) return selected!=null ? 'Now tap a hook to hang it on.' : 'Tap a weight, then tap a hook.';
+  if(hung<P.nh) return 'An empty hook weighs nothing \u2014 that is why it swings so far.';
+  return 'It leans to the heavier side. Tap a weight to take it back off \u2014 that is a swap \u2014 and try it the other way round.';
+}
 function message(){
   const done=solved(), c=swaps();
   // the same stamp and separator the shared result uses, so the header and the clipboard agree
   const cn = c>0 ? '<span style="color:var(--rest)">'+c+'</span>' : c;
-  document.getElementById('meta').innerHTML=(PRACTICE ? practiceStamp() : stamp())
+  document.getElementById('meta').innerHTML=(TUTOR ? learnStamp() : PRACTICE ? practiceStamp() : stamp())
     +'<br>'+cn+' swap'+(c===1?'':'s');   // hooks/weights line dropped (1.7.5): the rack and board show both
   promptEl.classList.toggle('win',done);
   // the reactive line shows only on a device that has never recorded a day and is not linked -
@@ -1069,7 +1114,12 @@ function message(){
     cb.style.display='none'; cb.classList.remove('go'); setShare(shareLabel());
     stopCountdown();
   }
-  if(done){
+  if(done && TUTOR){
+    promptEl.innerHTML='<div class="result"><div class="rtitle"><span class="rword">Level</span>'+LEVEL_ARM+'</div>'
+      +'<div class="tdone">That is the whole game. Today\u2019s board has six hooks and five weights, and nothing else about it is different.</div></div>';
+  }
+  else if(TUTOR){ promptEl.textContent=tutorPrompt(); }
+  else if(done){
     const k=streakNow(), best=bestLine(), next=nextLine();
     const stands = !NOWRITE && store.hist && store.hist[DAY_NO]!=null && store.hist[DAY_NO]!==c;   // solved first elsewhere
     promptEl.innerHTML=
@@ -1110,8 +1160,17 @@ document.getElementById('build').textContent='build '+BUILD
    wipe a day by accident. Taking weights off one at a time does everything it did, counted. */
 // "Another day" is gone: with a daily, a browse button would be a way off the day's board.
 // If the tab is left open across midnight, the next look moves to the new day.
-document.addEventListener('visibilitychange',function(){ if(document.hidden || PIN || PRACTICE) return;
+document.addEventListener('visibilitychange',function(){ if(document.hidden || PIN || PRACTICE || TUTOR) return;
   if(dayNumber()!==rawDay) location.reload(); else syncPull(); });   // back in view: a new day reloads; the same day folds in what other devices did
+/* The escape is a real button, on screen from the first prompt to the last, because a tutorial
+   you cannot leave is a gate. Entering it also retires the offer: whichever way a player
+   answers the card, they are not asked again on this device. */
+if(TUTOR){ const tb=document.getElementById('tback'); tb.style.display='';
+  logEvent('tutorial_start');
+  tb.onclick=function(){ location.href=location.pathname; };
+  document.getElementById('stats').style.display='none';
+  try{ localStorage.setItem('heftlearn','1'); }catch(e){}
+}
 if(PRACTICE){ const nx=document.getElementById('next'); nx.style.display=''; nx.onclick=function(){ day=randomBoard(day); load(); };
   const pf=document.getElementById('pickboard'), bn=document.getElementById('boardno'); pf.hidden=false;
   pf.onsubmit=function(e){ e.preventDefault(); const n=parseInt(bn.value,10);
@@ -1175,6 +1234,21 @@ document.addEventListener('touchstart',function(e){if(e.target.closest('#board')
 
 document.getElementById('firstlinkbtn').onclick=function(){ if(window.openLinkView) window.openLinkView(); };
 load(); window.scrollTo(0,0); requestAnimationFrame(frame); syncPull();
+/* The offer, on a device that has never recorded a day - the same condition the returner line
+   uses, and indistinguishable from a newcomer for the same reason. The day's board is already
+   drawn and playable behind it; declining costs one tap, and so does tapping the backdrop. */
+(function(){
+  if(NOWRITE || store.key || solvedCount()>0) return;
+  let seen=false; try{ seen=!!localStorage.getItem('heftlearn'); }catch(e){}
+  if(seen) return;
+  const v=document.getElementById('learnveil'); v.hidden=false;
+  logEvent('tutorial_offer');
+  const answer=function(go){ try{ localStorage.setItem('heftlearn','1'); }catch(e){}
+    if(go) location.href=location.pathname+'?learn'; else v.hidden=true; };
+  document.getElementById('learngo').onclick=function(){ answer(true); };
+  document.getElementById('learnskip').onclick=function(){ answer(false); };
+  v.onclick=function(e){ if(e.target===v) answer(false); };
+})();
 </script>
 </body>
 </html>

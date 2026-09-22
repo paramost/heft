@@ -276,6 +276,46 @@ days, then never. It was one tap's worth in 1.9.0 and was missed. Whether more i
 funnel's to say: opened to first hang is "did they work out what to do", first hang to solved
 is "did they stay".
 
+**The walkthrough rejection is lifted, and the line that replaced it.** 1.14.14, 22 Sept 2026.
+Dan's call: the end goal is a game worth publishing, and a first-time player must be able to
+learn it quickly and easily. "Two teaches, no tutorial" above stands as history; it no longer
+binds. What binds instead is narrower and sharper: **a tutorial may say anything about its own
+board, and nothing anywhere may say anything about today's.** That keeps the property the whole
+design rests on - the pre-tilt build, which answered "is this arm correct?" at the arm, was
+measured to make all 56 boards solvable bottom-up with every step forced, and the tree was
+decorative. A correctness indicator on the daily would restore exactly that. A teaching board
+cannot, because it is not the daily and nothing carries from it but vocabulary.
+
+What the daily never states, and the tutorial now does: **an empty hook weighs nothing**, which
+is why one weight alone throws its arm to the full 15 degrees; **an arm leans to its heavier
+side, in proportion**; and **taking a weight back off is what a swap is**. The order, the scale
+axis and the swap prompt were already permitted as vocabulary (1.9.0-1.9.2); these three were
+not stated anywhere, and the reading of the mobile is the entire skill.
+
+**It is offered over the day's board, not in front of it.** Dan's shape, and it is better than
+the gate first proposed: the daily loads and draws normally, and the offer sits on a softened
+veil with the board visible behind it, so the tutorial reads as something extra rather than as a
+door to get through. Either button retires it for good on that device, tapping the backdrop
+declines, and the escape stays on screen for the whole tutorial - a tutorial you cannot leave is
+a gate wearing a different hat. Shown on a device with no record and no key, which is the same
+condition the returner line uses and indistinguishable from a newcomer for the same reason
+(1.14.5); the offer takes the first visit and the link line keeps the ones after.
+
+**The tutorial is a fourth run mode, which is why it cost so little.** `?learn` sits beside the
+pin, practice and prelaunch modes and inherits their `NOWRITE` posture, so it cannot touch the
+record. It logs its own three events - offered, started, finished - and `logEvent` drops
+everything else while it runs, because a tutorial open counted as a daily open would corrupt the
+one funnel the distribution test depends on.
+
+**The tutorial board is hand-made and checked, not generated.** The bank's constraints exist to
+make a board worth solving; this one exists to be read at a glance. One arm, levers 2 and 4, two
+weights of 1 and 2, so the short side needs twice the mass and the obvious first try - lightest
+on the left, the way the rack reads - leans 9 degrees of the 15 available. `tools/check_tutor.js`
+proves the four things the teaching depends on rather than asserting them: the solution is level,
+it is the *only* level arrangement, lightest-first leans well clear of the 1.25 floor, and one
+weight alone reaches full tilt. The generator's rules are not the teaching's rules, and a
+teaching board that happened to have two answers would be worse than no teaching at all.
+
 **Notes under the weights, off by default.** 1.12.0. A player who works the weights out on
 paper asked for a small field under each weight to write a number in. It passes the root rule
 without strain: the field holds what the player wrote, and the game never reads it, checks it
