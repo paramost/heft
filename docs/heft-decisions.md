@@ -292,49 +292,6 @@ side, in proportion**; and **taking a weight back off is what a swap is**. The o
 axis and the swap prompt were already permitted as vocabulary (1.9.0-1.9.2); these three were
 not stated anywhere, and the reading of the mobile is the entire skill.
 
-**The score is one action again: a weight taken over, not a weight taken off.** 1.14.16,
-23 Sept 2026. A weight is never lifted off a hook now. You pick one from the rack and tap any
-hook; whatever was there goes back. **The first weight on a hook is free; changing it costs
-one.**
-
-That is not a new rule, it is the original one - 1.4.7's `touches - 1` per hook, "hanging a
-weight where one already hung". 1.8.3 moved the count to the moment of *removal*, and only
-because removal existed: a full board is required to finish, so every lift was a re-hang already
-owed. Take removal away and that reasoning has nothing left to do.
-
-**Why it was worth changing the mechanic rather than the words.** "Swap" names a two-thing
-operation and the unit was a one-thing action, so exchanging two weights cost two, and five
-separate attempts to explain that had failed: four placements of a per-hook number (in the
-socket, twice on the weight, under the hook), then the 1.9.0 prompt that "was one tap's worth
-and was missed". The sixth attempt was a tutorial whose board demonstrated a swap by exchanging
-two hung weights - written by someone who had read the definition an hour earlier. Dan's reading
-of that: if the author of the tutorial cannot keep the unit straight, the unit is the problem.
-Renaming it - *lifts* was the candidate - would have fixed the label on a **two-part** rule
-(placing is free, taking off costs), and left "you lift from the rack every time you place"
-ambiguous besides. Replace-only makes it a **one-part** rule, and the word Dan already chose
-becomes accurate for free.
-
-**Proved before it shipped, not after.** Removing an action can remove a way out, so
-`tools/check_replace.py` walks every board in the bank: 144 boards, 1.64M full arrangements,
-47 seconds. Three things hold everywhere. No dead end - six hooks against a capacity of 10
-(68 boards at cap 2) or 15 (76 at cap 3), so a full board still leaves 4 or 9 weights in the
-rack and there is always something to tap. The solution stays reachable from every full
-arrangement - which had to be walked rather than reasoned, because filling is one-way and the
-full arrangements are a closed world. And any partial board can still be filled. The check
-earns its keep by failing where it should: run against the two-weight tutorial board it reports
-no legal move at all, which is exactly the trap that board was.
-
-**What it costs, knowingly.** A filled hook can never be emptied again, so a board cannot be
-returned to a partial state to see what an arm does with nothing on it. Partial arms tilt by
-design (suppressing that "made the board silent for up to 5 placements of 6"), and that channel
-now closes at the first full fill. It already cost a swap, so it was already discouraged, and
-nobody has been seen using it. Scores also fall: what used to cost two costs one. The 21 days on
-record were scored the old way and cannot be migrated, because `hist` keeps only the number -
-paid at 21 family solves rather than later, on the same reasoning as 1.14.0.
-
-**`?swap=lift` restores 1.14.15 exactly**, and it prints beside the build number. The default on
-the preview is the new rule, because a change of feel has to be played without opting in.
-
 **It is offered over the day's board, not in front of it.** Dan's shape, and it is better than
 the gate first proposed: the daily loads and draws normally, and the offer sits on a softened
 veil with the board visible behind it, so the tutorial reads as something extra rather than as a
@@ -354,12 +311,22 @@ one funnel the distribution test depends on.
 make a board worth solving; this one exists to be read at a glance. One arm, levers 4 and 1,
 **three** weights of 2, 3 and 8 on two hooks, so the long arm needs the least and the obvious
 first try - lightest on the left, the way the rack reads - leans 6.8 degrees of the 15 available.
-The third weight is the whole point of the shape, and getting there cost a build: the first
-version had two weights on two hooks, where the only repair is to change both. **It demonstrated
-a swap by doing something that is not one**, and Dan caught it in a line. `tools/check_tutor.js`
-now proves the property the lesson rests on along with the rest - that exactly one change repairs
-the first try - and none of it is asserted. One weight goes unused, which is true of choosing and
-not true of the daily; a teaching board may differ from a real one, it may not mislead.
+
+**The third weight is the whole point of the shape, and it cost a build to learn.** The first
+version had two weights on two hooks, where the only repair is to take both off. A swap is one
+weight lifted off one hook, so that board **demonstrated a swap by doing something that is not
+one** - teaching the wrong unit in the single place the game explains itself. Dan caught it in a
+line. With a weight in reserve the first try is repaired by lifting one and hanging the spare:
+one lift, one swap, shown rather than described, and the move is one step heavier on purpose -
+what the rack's ordering exists to make possible (1.5.10). It is also a warning worth keeping:
+the author of that board had read the definition of a swap an hour earlier.
+
+`tools/check_tutor.js` proves what the teaching rests on rather than asserting it: the solution
+is level, it is the *only* level arrangement, lightest-first leans well clear of the 1.25 floor,
+one weight alone reaches full tilt, and **exactly one change repairs the first try**. One weight
+goes unused, which is true of choosing and not true of the daily; a teaching board may differ
+from a real one, it may not mislead. The generator's rules are not the teaching's rules, and a
+teaching board that happened to have two answers would be worse than no teaching at all.
 
 **Notes under the weights, off by default.** 1.12.0. A player who works the weights out on
 paper asked for a small field under each weight to write a number in. It passes the root rule
