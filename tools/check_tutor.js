@@ -65,6 +65,22 @@ BOARDS.forEach(function (b, n) {
   const one = new Array(b.nh).fill(null); one[0] = b.sol[0];
   say(Math.abs(lean(b.tree, one, b.vals)) === MAX_TILT, 'one weight alone throws the arm to the full ' + MAX_TILT + ' deg');
 
+  // THE LESSON ITSELF: a swap is one weight taking over one hook, so the obvious first try must
+  // be repairable by changing exactly ONE hook. The first tutorial board failed this - with two
+  // weights on two hooks the repair needs both, which is what made it teach the wrong unit.
+  let oneChange = null;
+  for (let i = 0; i < b.nh && !oneChange; i++) {
+    for (let w = 0; w < b.k; w++) {
+      if (w === naive[i]) continue;
+      const t = naive.slice(); t[i] = w;
+      const counts = new Array(b.k).fill(0); t.forEach(function (x) { counts[x]++; });
+      if (counts.some(function (n) { return n > b.cap; })) continue;
+      if (level(b, t)) { oneChange = [i, w]; break; }
+    }
+  }
+  say(!!oneChange, oneChange ? 'one change repairs the first try: hook ' + oneChange[0] + ' takes the ' + b.vals[oneChange[1]]
+                             : 'NO single change repairs the first try - the board teaches the wrong unit');
+
   // and every wrong full arrangement is visible, or the board would lie
   const worst = Math.min.apply(null, all.filter(function (c) { return !level(b, c); })
     .map(function (c) { return Math.abs(lean(b.tree, c, b.vals)); }));
